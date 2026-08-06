@@ -27,7 +27,7 @@ const io = new Server(server, {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:5173', // Must match frontend URL exactly when credentials is true
+  origin: true, // Allow any origin, reflecting it back to support credentials
   credentials: true
 }));
 
