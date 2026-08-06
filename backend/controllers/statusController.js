@@ -22,7 +22,7 @@ exports.getStatuses = async (req, res) => {
 };
 
 exports.addStatus = async (req, res) => {
-  const { content, mediaType } = req.body;
+  const { content, mediaType, caption } = req.body;
   const clerkId = req.headers['clerk-id'];
 
   try {
@@ -37,6 +37,7 @@ exports.addStatus = async (req, res) => {
       user: user._id,
       content,
       mediaType: mediaType || 'image',
+      caption,
       expiresAt
     });
 

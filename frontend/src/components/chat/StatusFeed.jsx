@@ -10,6 +10,9 @@ export default function StatusFeed() {
   const [viewerData, setViewerData] = useState(null); // { user, statuses, currentIndex }
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [caption, setCaption] = useState('');
 
   const fetchStatuses = async () => {
     try {
@@ -24,15 +27,21 @@ export default function StatusFeed() {
     fetchStatuses();
   }, []);
 
-  const handleStatusUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleStatusUpload = async () => {
+    if (!selectedFile) return;
 
     setUploading(true);
     toast.loading('Uploading status...', { id: 'status-upload' });
     try {
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', selectedFile);
       
       const { data: uploadData } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -41,16 +50,19 @@ export default function StatusFeed() {
       const config = { headers: { 'clerk-id': user.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/status`, {
         content: uploadData.url,
-        mediaType: 'image'
+        mediaType: 'image',
+        caption: caption
       }, config);
       toast.success('Status uploaded!', { id: 'status-upload' });
       setIsCreateOpen(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setCaption('');
       fetchStatuses();
     } catch (error) {
       toast.error('Failed to post status', { id: 'status-upload' });
     }
     setUploading(false);
-    e.target.value = null;
   };
 
   const openViewer = (group) => {
@@ -104,18 +116,35 @@ export default function StatusFeed() {
       {isCreateOpen && createPortal(
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-surface p-6 rounded-2xl flex flex-col items-center gap-4 min-w-[320px] max-w-[400px] w-full shadow-2xl relative">
-            <button onClick={() => setIsCreateOpen(false)} className="absolute top-4 right-4 text-outline hover:text-error transition-colors">
+            <button onClick={() => { setIsCreateOpen(false); setSelectedFile(null); setPreviewUrl(null); setCaption(''); }} className="absolute top-4 right-4 text-outline hover:text-error transition-colors">
               <span className="material-symbols-outlined">close</span>
             </button>
             <h3 className="font-title-md text-on-surface mb-2 font-semibold">Post a Status</h3>
             {uploading ? (
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary my-4"></div>
+            ) : selectedFile ? (
+              <div className="w-full flex flex-col gap-4">
+                <div className="relative w-full h-64 bg-surface-container rounded-xl overflow-hidden flex items-center justify-center">
+                  <img src={previewUrl} className="w-full h-full object-contain" />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Add a caption..." 
+                  value={caption} 
+                  onChange={(e) => setCaption(e.target.value)}
+                  className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2 text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleStatusUpload(); }}
+                />
+                <button onClick={handleStatusUpload} className="w-full bg-primary text-on-primary py-2 rounded-xl font-medium hover:bg-primary-container transition-colors shadow-sm">
+                  Post Status
+                </button>
+              </div>
             ) : (
               <div className="relative w-full h-48 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center text-outline hover:bg-surface-container-low transition-colors cursor-pointer group overflow-hidden">
                 <input 
                   type="file" 
                   accept="image/*"
-                  onChange={handleStatusUpload} 
+                  onChange={handleFileSelect} 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                   title="Upload status image"
                 />
@@ -151,14 +180,22 @@ export default function StatusFeed() {
                 </span>
               </div>
             </div>
-            <button onClick={closeViewer} className="text-white/80 hover:text-white bg-black/20 p-2 rounded-full backdrop-blur-md transition-colors z-20 cursor-pointer">
-              <span className="material-symbols-outlined text-[20px]">close</span>
+            <button onClick={closeViewer} className="text-white/80 hover:text-white w-8 h-8 flex items-center justify-center rounded-full transition-colors z-20 cursor-pointer">
+              <span className="material-symbols-outlined text-[24px]">close</span>
             </button>
           </div>
 
           {/* Media */}
-          <div className="w-full max-w-[400px] aspect-[9/16] relative flex items-center justify-center overflow-hidden rounded-xl bg-surface-container-lowest/5" onClick={nextStatus}>
+          <div className="w-full max-w-[400px] aspect-[9/16] relative flex flex-col items-center justify-center overflow-hidden rounded-xl bg-surface-container-lowest/5" onClick={nextStatus}>
             <img src={viewerData.statuses[viewerData.currentIndex].content} className="w-full h-full object-contain pointer-events-none" />
+            
+            {viewerData.statuses[viewerData.currentIndex].caption && (
+              <div className="absolute bottom-10 w-full px-6 flex justify-center z-20 pointer-events-none">
+                <div className="bg-black/50 backdrop-blur-md text-white px-4 py-2 rounded-xl text-center shadow-lg font-body-md break-words max-w-full">
+                  {viewerData.statuses[viewerData.currentIndex].caption}
+                </div>
+              </div>
+            )}
           </div>
         </div>,
         document.body

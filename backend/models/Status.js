@@ -5,6 +5,7 @@ const statusSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
     mediaType: { type: String, enum: ['text', 'image', 'video'], default: 'image' },
+    caption: { type: String },
     expiresAt: { type: Date, required: true }
   },
   { timestamps: true }
