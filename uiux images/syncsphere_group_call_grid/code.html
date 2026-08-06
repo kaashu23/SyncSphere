@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SyncSphere - Group Call</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f9f9f9",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#181b24",
+                        "inverse-surface": "#2f3131",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "on-surface-variant": "#474554",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-surface": "#1a1c1c",
+                        "on-tertiary-container": "#fefcff",
+                        "surface-container-high": "#e8e8e8",
+                        "primary-fixed": "#e4dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#c6bfff",
+                        "on-primary-container": "#fffbff",
+                        "surface": "#f9f9f9",
+                        "on-secondary-fixed": "#001354",
+                        "surface-tint": "#594aca",
+                        "primary": "#5647c8",
+                        "primary-fixed-dim": "#c6bfff",
+                        "surface-dim": "#dadada",
+                        "surface-container": "#eeeeee",
+                        "on-primary-fixed": "#160066",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary-fixed-variant": "#402eb1",
+                        "primary-container": "#6f62e2",
+                        "surface-variant": "#e2e2e2",
+                        "tertiary-container": "#71747f",
+                        "error-container": "#ffdad6",
+                        "secondary": "#4b5a9c",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#585c66",
+                        "outline": "#787585",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dde1ff",
+                        "secondary-container": "#a6b5fd",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#334282",
+                        "background": "#f9f9f9",
+                        "outline-variant": "#c8c4d6",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-secondary-container": "#354585",
+                        "inverse-on-surface": "#f0f1f1",
+                        "tertiary-fixed-dim": "#c3c6d2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin-desktop": "32px",
+                        "xl": "40px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "title-sm": ["Inter"],
+                        "headline-md-mobile": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "title-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-background h-full text-on-background antialiased flex flex-col md:flex-row overflow-hidden font-body-md">
+<!-- SideNavBar (Hidden on Mobile) -->
+<nav class="w-[260px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface hidden md:flex flex-col py-lg px-md gap-xs z-20">
+<div class="mb-lg px-sm">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SyncSphere</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Digital Serenity</p>
+</div>
+<div class="flex-1 flex flex-col gap-unit">
+<a class="flex items-center gap-md px-sm py-sm text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-colors duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">grid_view</span>
+<span class="font-title-sm text-title-sm">Workspaces</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-colors duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">tag</span>
+<span class="font-title-sm text-title-sm">Channels</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-colors duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">chat_bubble</span>
+<span class="font-title-sm text-title-sm">Direct Messages</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm bg-secondary-fixed text-on-secondary-fixed rounded-lg scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-title-sm text-title-sm">Events</span>
+</a>
+<a class="flex items-center gap-md px-sm py-sm text-on-surface-variant hover:bg-surface-container-low hover:bg-surface-container-high transition-colors duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="font-title-sm text-title-sm">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md px-sm py-sm">
+<img alt="User Profile" class="w-10 h-10 rounded-full object-cover border-2 border-surface" data-alt="A small circular avatar portrait of a professional individual looking composed and calm, set against a solid light minimalist background. The lighting is soft and flattering, emphasizing a clean corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpMrI5GcgdjtUagGV0Yt3CJghX6oOBy3Z1QqldAwRVv6cAEuQY7cyVu4EuMQYaJfL7rtxD8WSjjDJD8EpTRGS16alY_bIxRrrIyyJm1ZmmkJzaMWJf8Inqqsjkg6_bT6V0g3SbfSqWCYF_Hr2C3R-OgjeLoyHyV00gmUKDpkuEJ2fKe6DQyTF447HULztrNOW0nP0Qcnp1J4r4nywB1t4ChvnBlTQdOZ10FISuM3mPT__mAnxVsR7WEA"/>
+<div>
+<p class="font-title-sm text-title-sm font-medium text-on-surface">Elena Rostova</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Available</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full w-full md:ml-[260px] relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 border-b border-outline-variant bg-surface z-10 shrink-0">
+<div class="flex items-center gap-4">
+<div class="md:hidden">
+<span class="font-headline-md-mobile text-headline-md-mobile font-bold text-primary">SyncSphere</span>
+</div>
+<div class="hidden md:flex items-center text-on-surface-variant gap-2">
+<span class="font-title-sm text-title-sm font-medium text-on-surface">Design Sync Weekly</span>
+<span class="bg-surface-container-high text-on-surface px-2 py-1 rounded-full font-label-caps text-label-caps">4 Participants</span>
+</div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">info</span>
+</button>
+</div>
+</header>
+<!-- Call Canvas -->
+<div class="flex-1 overflow-hidden relative bg-surface-container-lowest p-margin-mobile md:p-margin-desktop flex flex-col items-center justify-center">
+<!-- Video Grid -->
+<div class="w-full max-w-[1200px] h-full max-h-[800px] grid grid-cols-1 md:grid-cols-2 gap-gutter md:gap-lg pb-24">
+<!-- Participant 1 (Active Speaker) -->
+<div class="relative rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.02)] border-2 border-primary group">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A professional video conference shot of a young woman with dark hair in a modern, well-lit home office. She is smiling and gesturing slightly as if explaining a concept. The lighting is soft and natural, creating a serene and focused mood consistent with a minimalist corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK_nx8nL3prxzKeJJiqPwNQuGqXUf_Dbgx3RRP-Up-AsitsMgRe2YvbRcCYV9-B5Os5_bzmBolSPMBL7CC7xkBiib2j8-DOluJIrMGkT1bfi6U2rGriKJiHy90jmgziNyafkWx35DBg3gu87MLkzL-aJ9fzEQydOagqu_S2TZyX0-1Nm1bbx2spU2IxBJxJmODe_qDMeU-ni_PIpXat4sorNR_2jtBXPnPAYWO6O33bF-8dbYJe6qSYA"/>
+<div class="absolute bottom-sm left-sm glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-title-sm text-title-sm text-on-surface font-medium">Elena Rostova (You)</span>
+</div>
+</div>
+<!-- Participant 2 -->
+<div class="relative rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.02)] border border-outline-variant bg-surface-container-low">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A professional video conference shot of a middle-aged man with glasses sitting in a minimalist corporate meeting room. The background is slightly blurred with soft natural light coming from a side window. The overall aesthetic is calm, bright, and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKV6ECwyQvFaRjiEgnraq8Pbda--yGxp1RUkrzi-lxhauhaGSHr0h_u-WekkXHwte8qnEK_uXtrZ7W_ceo4s0TBk6VUeH_RifJRHhdvHHpyc6spxPlicvPpWsItQP8rN3ELfAiyYDSOtu1vuktulbeW30X2CzM1wF4ia_gZHMgppNBLpHX8xjjGtUT3BegLDhu0StI-dWW8mBTMtObrTl0_jZQrvAxBbnRaEI-lWVqceb983f5aumjEQ"/>
+<div class="absolute bottom-sm left-sm glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+<span class="font-title-sm text-title-sm text-on-surface font-medium">Marcus Chen</span>
+</div>
+<div class="absolute top-sm right-sm glass-panel p-1.5 rounded-full text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">mic_off</span>
+</div>
+</div>
+<!-- Participant 3 -->
+<div class="relative rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.02)] border border-outline-variant bg-surface-container-low">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="A professional video conference shot of a young man wearing a simple casual shirt in a bright, airy workspace with a few subtle indoor plants in the background. The lighting is high-key and soft, contributing to a clean, minimal, and serene digital workspace feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzJ4pr1LjtdmP9HCWCvPq1VzIqFSlbBiNlLa0rIO_IalqjqSi3puglFqSMlfZviGlP7GMJ7kEZqrFRKgNzS3BKAe6j7UifvATywyMua0niV6tq0NxePVdIvDvnpat2Ap8Dw1dacj2WHLKDjyQFBaV2cfQOe0aTt1dDW5ClNWPr306CKeUTmkUw9bJEMrTLajxQgFfkUbsbrjcdzo3HkiE_YmlY9c2a5mXmGNFsCYjKyZ8a9ysVLsqYkw"/>
+<div class="absolute bottom-sm left-sm glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+<span class="font-title-sm text-title-sm text-on-surface font-medium">David Miller</span>
+</div>
+</div>
+<!-- Participant 4 -->
+<div class="relative rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.02)] border border-outline-variant bg-surface-container-low">
+<div class="absolute inset-0 flex items-center justify-center bg-surface-container">
+<div class="w-24 h-24 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-display-lg text-display-lg">
+                            SO
+                        </div>
+</div>
+<div class="absolute bottom-sm left-sm glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2">
+<span class="font-title-sm text-title-sm text-on-surface font-medium">Sarah O'Connor</span>
+</div>
+<div class="absolute top-sm right-sm glass-panel p-1.5 rounded-full text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">mic_off</span>
+</div>
+</div>
+</div>
+<!-- Floating Control Pill -->
+<div class="absolute bottom-lg left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center gap-4 z-30">
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined">screen_share</span>
+</button>
+<div class="w-px h-8 bg-outline-variant mx-2"></div>
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined">mood</span>
+</button>
+<button class="w-12 h-12 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+<button class="px-6 h-12 rounded-full flex items-center justify-center bg-error hover:bg-on-error-container text-on-error transition-colors font-title-sm text-title-sm ml-2">
+                    Leave
+                </button>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SyncSphere - Create Group</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f9f9f9",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#181b24",
+                        "inverse-surface": "#2f3131",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "on-surface-variant": "#474554",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#b8c4ff",
+                        "on-surface": "#1a1c1c",
+                        "on-tertiary-container": "#fefcff",
+                        "surface-container-high": "#e8e8e8",
+                        "primary-fixed": "#e4dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#c6bfff",
+                        "on-primary-container": "#fffbff",
+                        "surface": "#f9f9f9",
+                        "on-secondary-fixed": "#001354",
+                        "surface-tint": "#594aca",
+                        "primary": "#5647c8",
+                        "primary-fixed-dim": "#c6bfff",
+                        "surface-dim": "#dadada",
+                        "surface-container": "#eeeeee",
+                        "on-primary-fixed": "#160066",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#1a1c1c",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary-fixed-variant": "#402eb1",
+                        "primary-container": "#6f62e2",
+                        "surface-variant": "#e2e2e2",
+                        "tertiary-container": "#71747f",
+                        "error-container": "#ffdad6",
+                        "secondary": "#4b5a9c",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#585c66",
+                        "outline": "#787585",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dde1ff",
+                        "secondary-container": "#a6b5fd",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#334282",
+                        "background": "#f9f9f9",
+                        "outline-variant": "#c8c4d6",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-secondary-container": "#354585",
+                        "inverse-on-surface": "#f0f1f1",
+                        "tertiary-fixed-dim": "#c3c6d2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "unit": "4px",
+                        "margin-desktop": "32px",
+                        "xl": "40px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "title-sm": ["Inter"],
+                        "headline-md-mobile": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "title-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md-mobile": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FAFAFA; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .soft-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.02); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex items-center justify-center p-4">
+<!-- Main Container -->
+<main class="w-full max-w-[600px] bg-surface rounded-xl soft-shadow border border-surface-container-high overflow-hidden flex flex-col h-[80vh] max-h-[800px]">
+<!-- Header -->
+<header class="flex items-center justify-between p-lg border-b border-surface-container-high">
+<div class="flex items-center gap-sm">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<h1 class="font-title-sm text-title-sm text-on-surface">Create Group</h1>
+</div>
+<button class="text-primary font-title-sm text-title-sm hover:opacity-80 transition-opacity">Create</button>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-xl">
+<!-- Group Details Section -->
+<section class="flex flex-col gap-lg items-center">
+<div class="relative group cursor-pointer">
+<div class="w-24 h-24 rounded-full bg-surface-container-low flex items-center justify-center border-2 border-dashed border-outline-variant group-hover:border-primary transition-colors overflow-hidden">
+<span class="material-symbols-outlined text-outline text-3xl group-hover:text-primary transition-colors" data-icon="add_a_photo">add_a_photo</span>
+</div>
+</div>
+<div class="w-full">
+<input class="w-full bg-transparent border-b border-outline-variant focus:border-primary px-sm py-sm outline-none font-headline-md text-headline-md text-center text-on-surface placeholder:text-outline-variant transition-colors" placeholder="Group Name" type="text"/>
+</div>
+</section>
+<!-- Selected Members Chips (Hidden by default, shown for UI demonstration) -->
+<section class="flex flex-wrap gap-xs">
+<div class="flex items-center gap-xs bg-secondary-fixed-dim/20 text-on-surface rounded-full py-1 px-3 border border-secondary-fixed">
+<img class="w-5 h-5 rounded-full object-cover" data-alt="A small circular avatar showing a professional headshot of a person with short hair smiling in a brightly lit modern office setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpjO1jW3Xth1_p642dKhMViL-RWBLeP1hYHEaC4LZ2I5pxiy0I_qOvAmRGtOL0cbi-PXytUTxs_vai76SleXnm4cog8rI6YNbZchiHtHgYjZO7OvanscNmC1lJYiBNPFz9c9XeJZoRLWBSD9_SpAwvZR504aA6WEzZl3tKaxN6-_ONb9tgi0G8X17-_2rgvfhYiLE4GdE6V0VJTvzo2WoDkDo6iSgU9F7XWO_WgZdEoGaByzBU0CdKTA"/>
+<span class="font-body-sm text-body-sm">Alex R.</span>
+<button class="flex items-center justify-center"><span class="material-symbols-outlined text-[16px]" data-icon="close">close</span></button>
+</div>
+<div class="flex items-center gap-xs bg-secondary-fixed-dim/20 text-on-surface rounded-full py-1 px-3 border border-secondary-fixed">
+<img class="w-5 h-5 rounded-full object-cover" data-alt="A small circular avatar of a woman with glasses and dark curly hair, wearing a white shirt, against a soft gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpPC5qejhY011bMV5w6BeYOQMTflbiJdOW_C1vq1uz6YzTvaErh93ousJvubTDxY4uxItIhG2NB_zzb9Hu8BX1uvXXKQec0M4L8NRSk58xeoAfFFzWhbu9_uBdboutZY6F2xR7OPREkTnEfHXW4PzvYs70tZJ0PBMazG6eJC8wRq-WNbZp5ehCDLhYvMKnn4IxqAc8BcWy3NryhRb5EwIVKgAn94HMH_CgDG83bloQ9JLnU3WCf6-JFg"/>
+<span class="font-body-sm text-body-sm">Sam T.</span>
+<button class="flex items-center justify-center"><span class="material-symbols-outlined text-[16px]" data-icon="close">close</span></button>
+</div>
+</section>
+<!-- Search -->
+<section class="sticky top-0 bg-surface z-10 py-xs">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-bright border border-surface-container-high rounded-lg py-2 pl-10 pr-4 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors" placeholder="Search contacts..." type="text"/>
+</div>
+</section>
+<!-- Contact List -->
+<section class="flex flex-col gap-1">
+<h3 class="font-label-caps text-label-caps text-outline uppercase mb-sm px-2">Suggested</h3>
+<!-- Contact Item 1 (Selected) -->
+<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-lowest cursor-pointer transition-colors bg-[#F0F2FF]">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full object-cover border border-surface-container" data-alt="A portrait of a young professional with short blond hair, wearing a casual sweater, set against a neutral, airy background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASzj8Jmiwf6WRP9omr-0JEMHDo5jAIbODn8-i9buxu_aWzbrHj4iWASPMSs78ZqS3PvnQPpJdZT4kBBc5vLitqvSkh0EKea-eBrAbYVsTbswS2X-3qpvIH-rig14qtq8O6ZXocVemIbOf5R-Yl9MTKO3evAPJSmMI6XGKTdWnJu7pdIILyJXYIwN-hPavZgiU-B5jhRvfAH2Sv9vNfaWMOrTdVr89L2aup-th8XOzyU0VqqGOmGwIFiA"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Alex Rivers</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Design Team</span>
+</div>
+</div>
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-on-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="check" data-weight="fill">check</span>
+</div>
+</label>
+<!-- Contact Item 2 -->
+<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-lowest cursor-pointer transition-colors">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full object-cover border border-surface-container" data-alt="A professional headshot of an individual with dark hair, wearing a sleek black blazer, in a brightly lit modern corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbV83vvHokDxsthgmKMFcLXB1Ocj5qNU75Z0flVIp9_tQ92bv5hIVLNkLuxI7efVUGWAIGP-uP3AwNVHodf1-FCgf5iUrYd1Hzr-HjZZxeIfBBCnwCdhVKcSBrefuNvcmztBBmyuyBzy0zRid0JzkdbnhIBfHOCpwCODYrIIk9j2w7dWJ2X_hkfTPbAkrcvwVa6jmskENEKM1JLedjNik7Z4qG-9SNlqBVptBW_XxCwJzSjnHKlZBaFA"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Jordan Lee</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Engineering</span>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border border-outline-variant"></div>
+</label>
+<!-- Contact Item 3 -->
+<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-lowest cursor-pointer transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant font-title-sm text-title-sm">
+                            ST
+                        </div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Sam Taylor</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Product Manager</span>
+</div>
+</div>
+<div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-on-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="check" data-weight="fill">check</span>
+</div>
+</label>
+<h3 class="font-label-caps text-label-caps text-outline uppercase mt-md mb-sm px-2">All Contacts</h3>
+<!-- Contact Item 4 -->
+<label class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-lowest cursor-pointer transition-colors">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full object-cover border border-surface-container" data-alt="Avatar of a mature professional with silver hair and a calm expression, wearing business casual attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApgRscIOgIOQs3KusMhHaf5E_UyH1wQRhsWXxfZpSgT2FfRfGl9_MfM9axJiSJOXmDq8x4TojBHnuOcie6NwqI1z8jtqBohW_i9Auzugbttl8go1rBXKjh6SV3jUY1y_ZOb_bZwNNqNwHqqVoEQ4x2lJA73Zcm5SLm63P9FDSVa4Blt_rTP-ll98c9XB2a5vlj5CIE-0Nasym565DuL6zjaSj7pcHAODI3yALjmh_plyhREoX63OQphQ"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface">Morgan Davies</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Marketing</span>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border border-outline-variant"></div>
+</label>
+</section>
+</div>
+</main>
+</body></html>

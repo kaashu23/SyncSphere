@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SyncSphere Chat</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS & Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#f9f9f9",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#181b24",
+                    "inverse-surface": "#2f3131",
+                    "on-tertiary-fixed-variant": "#434751",
+                    "on-surface-variant": "#474554",
+                    "on-error": "#ffffff",
+                    "secondary-fixed-dim": "#b8c4ff",
+                    "on-surface": "#1a1c1c",
+                    "on-tertiary-container": "#fefcff",
+                    "surface-container-high": "#e8e8e8",
+                    "primary-fixed": "#e4dfff",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-primary": "#c6bfff",
+                    "on-primary-container": "#fffbff",
+                    "surface": "#f9f9f9",
+                    "on-secondary-fixed": "#001354",
+                    "surface-tint": "#594aca",
+                    "primary": "#5647c8",
+                    "primary-fixed-dim": "#c6bfff",
+                    "surface-dim": "#dadada",
+                    "surface-container": "#eeeeee",
+                    "on-primary-fixed": "#160066",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#1a1c1c",
+                    "surface-container-highest": "#e2e2e2",
+                    "surface-container-low": "#f3f3f3",
+                    "on-primary-fixed-variant": "#402eb1",
+                    "primary-container": "#6f62e2",
+                    "surface-variant": "#e2e2e2",
+                    "tertiary-container": "#71747f",
+                    "error-container": "#ffdad6",
+                    "secondary": "#4b5a9c",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#585c66",
+                    "outline": "#787585",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#dde1ff",
+                    "secondary-container": "#a6b5fd",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#334282",
+                    "background": "#f9f9f9",
+                    "outline-variant": "#c8c4d6",
+                    "tertiary-fixed": "#e0e2ef",
+                    "on-secondary-container": "#354585",
+                    "inverse-on-surface": "#f0f1f1",
+                    "tertiary-fixed-dim": "#c3c6d2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "lg": "24px",
+                    "unit": "4px",
+                    "margin-desktop": "32px",
+                    "xl": "40px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "title-sm": [
+                            "Inter"
+                    ],
+                    "headline-md-mobile": [
+                            "Inter"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "title-sm": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-md-mobile": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-caps": [
+                            "11px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "15px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-sm": [
+                            "13px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        /* Ambient shadows and refinements */
+        .ambient-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for airy feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #e2e2e2;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen overflow-hidden flex antialiased">
+<!-- JSON Component: SideNavBar -->
+<nav class="w-[260px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-lg px-md gap-xs z-20">
+<!-- Header -->
+<div class="flex items-center gap-sm px-sm mb-lg">
+<img alt="User Profile" class="w-10 h-10 rounded-full object-cover ring-2 ring-background ring-offset-1" data-alt="A minimal, stylized geometric avatar illustration. It features soft pastel colors like pale indigo and warm gray in abstract, intersecting fluid shapes on a pristine white background. The aesthetic is extremely modern, flat, and fits seamlessly into a high-end corporate communication tool." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1pJOoAB0_wkWYncHEF9kRpK5sCc5rzrC-aspmPSVy2BHYk04oi1bqxS565vWxJWePVUVR5zJ--gxwOTYgWH8nC8EUNg-SA_gKZa9fKWWp8aemeUgnW7RYPqf_CRW0juKdtd8nD7BSx_UKMSDkbYPVmnPNSKejUk7JE7MttYf0o7anR2VB_svrLrEtyNfwOk42V7TrT-6jBRI7547QQu2RqZZs_jUHU7nXYVJNOKRKESbPSSM5CmCKrg"/>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold text-primary">SyncSphere</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Digital Serenity</span>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex flex-col gap-unit flex-1">
+<!-- Workspaces (Inactive) -->
+<button class="flex items-center gap-sm px-sm py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 active:scale-95 duration-150 font-body-md text-body-md text-left w-full group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">grid_view</span>
+<span>Workspaces</span>
+</button>
+<!-- Channels (Inactive) -->
+<button class="flex items-center gap-sm px-sm py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 active:scale-95 duration-150 font-body-md text-body-md text-left w-full group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">tag</span>
+<span>Channels</span>
+</button>
+<!-- Direct Messages (ACTIVE - Semantic mapping based on user intent "Active conversation") -->
+<button class="flex items-center gap-sm px-sm py-sm rounded-lg bg-secondary-fixed text-on-secondary-fixed transition-colors duration-200 active:scale-95 duration-150 font-body-md text-body-md text-left w-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-medium">Direct Messages</span>
+</button>
+<!-- Events (Inactive) -->
+<button class="flex items-center gap-sm px-sm py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 active:scale-95 duration-150 font-body-md text-body-md text-left w-full group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">calendar_today</span>
+<span>Events</span>
+</button>
+<!-- Settings (Inactive) -->
+<button class="flex items-center gap-sm px-sm py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 active:scale-95 duration-150 font-body-md text-body-md text-left w-full group mt-auto">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">settings</span>
+<span>Settings</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area Wrapper -->
+<div class="ml-[260px] flex-1 flex flex-col h-screen w-[calc(100%-260px)] relative">
+<!-- JSON Component: TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop docked full-width top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
+<!-- Left side: Search / Brand -->
+<div class="flex items-center gap-lg w-1/3">
+<span class="font-headline-md text-headline-md font-bold text-primary">SyncSphere</span>
+<!-- Search Bar Placeholder based on search_bar: "on_left" -->
+<div class="relative w-full max-w-[240px]">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-xs pl-xl pr-sm font-body-sm text-body-sm focus:ring-1 focus:ring-primary focus:bg-surface transition-all placeholder:text-outline-variant text-on-surface" placeholder="Search..." type="text"/>
+</div>
+</div>
+<!-- Right side: Actions & Avatar -->
+<div class="flex items-center gap-sm text-on-surface-variant">
+<!-- trailing_icon_actions mapped exactly -->
+<button class="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low mr-sm">
+<span class="material-symbols-outlined">info</span>
+</button>
+<div class="w-px h-6 bg-outline-variant/50 mx-xs"></div>
+<img alt="Contact Avatar" class="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all" data-alt="A professional corporate headshot of a young woman with a warm smile, wearing a minimalist modern blazer. She is set against a soft, bright white studio background that creates a clean, airy light-mode aesthetic. The lighting is soft and diffused, emphasizing a sense of digital serenity and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlwp858_wlxT4gp92Gl-wJic39fEvMDiyPfrLs6QQcG_SAFhe2uilNmkcQED-dx2rCD_yXKihW_fdO238o_Qc_2Zmxtr3rZRkIES5KWo7EtpKth-BeZ-U26UzI90S32ZaJEotWu8SC-bw88edT8Y8caEADF2C6D0Zy6JpwCUXdB_7oYHtti2P-PLCdQdJNuuD38mA8Qq4WkzOyTRYs0aEaJABW2UU9DXGPp4rFLlTm_WoF-WNZw4Gx-A"/>
+</div>
+</header>
+<!-- Specific Active Chat Sub-Header (Fulfilling prompt requirements while respecting JSON anchors) -->
+<div class="flex items-center justify-between px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+<div class="flex items-center gap-md">
+<div class="relative">
+<img alt="Chat Contact" class="w-12 h-12 rounded-full object-cover ring-2 ring-surface" data-alt="A professional corporate headshot of a young woman with a warm smile, wearing a minimalist modern blazer. She is set against a soft, bright white studio background that creates a clean, airy light-mode aesthetic. The lighting is soft and diffused, emphasizing a sense of digital serenity and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZdL8rv2s4Hz3Iwh4PY3EUSNYtJVZnhbocivFiahyi6HW0Jfa4FAoEM08QsNt75u48escQLRJzhAqDcEfX_AZfq45pzFcfTvz4HDN06M_jCea5cVm4v1UCF8sXdG44_PUPeBWhFQ86rCkjVNKmR2eZZtADxpakbkiuYoBnsDsdL14ssI5cHZSbkIxjlKtsgVGISTgJByKNwaqikXs5GiEAwHz-1BgbJgQJhs1vxG6SfnQ2s1q2hqDSqQ"/>
+<!-- Online Status Indicator -->
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h2 class="font-title-sm text-title-sm text-on-surface font-semibold">Elena Rostova</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+                        Active now
+                    </p>
+</div>
+</div>
+</div>
+<!-- Chat Canvas - Fluid Grid -->
+<main class="flex-1 overflow-y-auto bg-background flex flex-col items-center relative">
+<div class="w-full max-w-[900px] flex-1 px-margin-desktop py-lg flex flex-col gap-lg justify-end pb-xl">
+<!-- Date Divider -->
+<div class="flex items-center justify-center gap-md my-sm">
+<div class="h-px bg-outline-variant/30 flex-1"></div>
+<span class="font-label-caps text-label-caps text-outline px-sm py-xs bg-surface-container-lowest rounded-full border border-outline-variant/20 ambient-shadow">TODAY</span>
+<div class="h-px bg-outline-variant/30 flex-1"></div>
+</div>
+<!-- Incoming Message Block -->
+<div class="flex items-end gap-sm group max-w-[85%] self-start">
+<img alt="Elena" class="w-8 h-8 rounded-full object-cover shrink-0 mb-1" data-alt="A professional corporate headshot of a young woman with a warm smile, wearing a minimalist modern blazer. She is set against a soft, bright white studio background that creates a clean, airy light-mode aesthetic. The lighting is soft and diffused, emphasizing a sense of digital serenity and approachability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOPT-aFrab_2iyxwPxoQtYe2gLV8p0sO3uX7xoJU-DQ5OLwvycGZOcLf-IFDFyRZj3lStUMHU0Fe-rYr5PfoXu4ohJt1NgVS7t02YGrYrFUaTmcfN21J6cRIdUtMzXyjZm-BspDNCwcYFOXNE9W-rnfT70ICyLZmPHJSMFFt_GoGDIxho1YkRp8-p3YSq3BlfZtcz4sUEH5q6Qq9PVyEcceM9S-iSeeA33ze5ZmWCScvFN0NGRKhnM5Q"/>
+<div class="flex flex-col gap-1 items-start">
+<div class="bg-surface border border-outline-variant/50 rounded-2xl rounded-bl-sm px-md py-sm text-on-surface font-body-md text-body-md ambient-shadow max-w-full">
+<p>Here's the latest draft for the minimalist UI guidelines we discussed. Let me know if the tone feels right.</p>
+</div>
+<span class="font-label-caps text-label-caps text-outline-variant ml-1 opacity-0 group-hover:opacity-100 transition-opacity">10:42 AM</span>
+</div>
+</div>
+<!-- Incoming Message (Image + Text) -->
+<div class="flex items-end gap-sm group max-w-[85%] self-start">
+<div class="w-8 h-8 rounded-full shrink-0"></div> <!-- Spacer for alignment -->
+<div class="flex flex-col gap-2 items-start">
+<div class="bg-surface border border-outline-variant/50 rounded-2xl px-sm py-sm text-on-surface ambient-shadow">
+<img alt="Workspace Reference" class="rounded-xl object-cover max-w-[280px] h-auto border border-outline-variant/30" data-alt="A modern, minimalist workspace desk setup viewed from above. The scene includes a sleek silver laptop, a white ceramic coffee cup, and a small potted green succulent plant on a light ash wood surface. The lighting is bright natural daylight, creating a serene, focused, and clean corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoCJRbM40dYOojyI4KMGL3oh1mKUJvJi5REK43fJMPcXmA8E26VcimBvVfXj3Wo6hapoPsXi0wsJSeDZrv2wLvHnJC8RX9OhFunq_4lCCtv1EKAkKsQ1_SLZW01auWUulK6IkqOOoxA8xgeoyDSKUk-O_3byPLTPKMdYzc329ZNyAYRWDIrKbViwk_YG0XiFj4iFJCxYrNMDJmxD8QuyEfg4cB9DP-CDoNSo10UPNqlAorsgeSPmePzQ"/>
+<p class="font-body-md text-body-md mt-sm px-xs pb-xs">I think the airy aesthetic in this reference is exactly what we need for the new chat containers.</p>
+</div>
+<!-- Emoji Reaction Pill -->
+<div class="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant/40 rounded-full px-2 py-1 shadow-sm mt-[-10px] ml-4 relative z-10 hover:bg-surface-container-low cursor-pointer transition-colors">
+<span class="text-[14px]">✨</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">1</span>
+</div>
+</div>
+</div>
+<!-- Outgoing Message Block (With Reply Quote) -->
+<div class="flex items-end gap-sm group max-w-[85%] self-end flex-row-reverse">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary-container text-on-primary-container rounded-2xl rounded-br-sm px-md py-sm font-body-md text-body-md ambient-shadow max-w-full relative">
+<!-- Reply Quote Context -->
+<div class="mb-sm pl-sm border-l-2 border-primary/40 bg-primary/5 rounded-r-md py-1 pr-sm text-sm">
+<p class="font-title-sm text-[12px] text-primary/80 mb-0.5">Elena Rostova</p>
+<p class="text-on-primary-container/80 line-clamp-1 opacity-90">Here's the latest draft for the minimalist UI guidelines...</p>
+</div>
+<p>This is looking fantastic, Elena. The generous whitespace really brings out that "Digital Serenity" vibe we wanted.</p>
+</div>
+<div class="flex items-center gap-1 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="font-label-caps text-label-caps text-outline-variant">10:45 AM</span>
+<!-- Read Receipt -->
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+<!-- Outgoing Message Block (Short) -->
+<div class="flex items-end gap-sm group max-w-[85%] self-end flex-row-reverse">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary-container text-on-primary-container rounded-2xl px-md py-sm font-body-md text-body-md ambient-shadow max-w-full">
+<p>I'll review the CSS tokens after lunch and sync back.</p>
+</div>
+<div class="flex items-center gap-1 mr-1">
+<span class="font-label-caps text-label-caps text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">10:46 AM</span>
+<!-- Read Receipt -->
+<span class="material-symbols-outlined text-[16px] text-outline-variant">done_all</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Input Bar -->
+<div class="w-full bg-background border-t border-outline-variant/30 py-md px-margin-desktop flex justify-center shrink-0">
+<div class="w-full max-w-[900px]">
+<!-- Ghost Input Style Container -->
+<div class="flex items-end gap-sm bg-surface border border-outline-variant rounded-2xl px-sm py-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
+<!-- Attach Action -->
+<button class="p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low self-end mb-0.5">
+<span class="material-symbols-outlined text-[22px]">attach_file</span>
+</button>
+<!-- Text Input -->
+<textarea class="flex-1 bg-transparent border-none resize-none focus:ring-0 font-body-md text-body-md text-on-surface placeholder:text-outline py-sm px-xs min-h-[44px] max-h-[120px] outline-none" placeholder="Type a message..." rows="1"></textarea>
+<!-- Secondary Actions -->
+<div class="flex items-center gap-1 self-end mb-0.5 pr-xs">
+<button class="p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[22px]">mood</span>
+</button>
+<button class="p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[22px]">mic</span>
+</button>
+</div>
+<!-- Primary Send Action -->
+<button class="p-sm bg-primary text-on-primary hover:bg-primary-container transition-colors rounded-xl self-end mb-0.5 ml-xs flex items-center justify-center ambient-shadow active:scale-95 duration-150">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+<!-- Microcopy / Typing indicator area -->
+<div class="h-6 flex items-center px-sm mt-1">
+<p class="font-label-caps text-label-caps text-outline-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-primary/50 rounded-full animate-pulse"></span>
+                        Elena is typing...
+                    </p>
+</div>
+</div>
+</div>
+</div>
+</body></html>
