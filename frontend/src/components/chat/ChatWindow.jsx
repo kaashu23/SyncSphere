@@ -8,6 +8,7 @@ import VideoCallModal from './VideoCallModal';
 import EmojiPicker from 'emoji-picker-react';
 import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ENDPOINT = 'http://localhost:5001';
 let socket;
@@ -25,7 +26,7 @@ const authenticator = async () => {
   }
 };
 
-export default function ChatWindow({ selectedChat }) {
+export default function ChatWindow({ selectedChat, onBack }) {
   const { user } = useUser();
   const theme = useSelector((state) => state.theme.theme);
   const [messages, setMessages] = useState([]);
@@ -118,10 +119,12 @@ export default function ChatWindow({ selectedChat }) {
   const [chatsList, setChatsList] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const typingTimeoutRef = useRef(null);
+  const [initialLoading, setInitialLoading] = useState(false);
 
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
+      setInitialLoading(true);
       const config = { headers: { 'clerk-id': user.id } };
       const { data } = await axios.get(`http://localhost:5001/api/messages/${selectedChat._id}`, config);
       setMessages(data);
@@ -132,6 +135,8 @@ export default function ChatWindow({ selectedChat }) {
       socket.emit('mark read', { chatId: selectedChat._id, users: selectedChat.users });
     } catch (error) {
       console.error(error);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -393,7 +398,7 @@ export default function ChatWindow({ selectedChat }) {
   if (!selectedChat) {
     return (
       <section className="flex-1 h-full bg-surface-bright flex flex-col items-center justify-center relative">
-        <div className="flex flex-col items-center text-center max-w-md animate-in fade-in zoom-in duration-500">
+        <div className="flex flex-col items-center text-center w-full max-w-[400px] px-4 animate-in fade-in zoom-in duration-500">
           <div className="w-24 h-24 bg-surface-container rounded-full flex items-center justify-center mb-6 shadow-sm border border-outline-variant/30">
             <span className="material-symbols-outlined text-[48px] text-primary">chat_bubble</span>
           </div>
@@ -445,10 +450,18 @@ export default function ChatWindow({ selectedChat }) {
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
             </div>
             <div>
-              <h2 className="font-title-sm text-title-sm text-on-surface font-semibold flex items-center gap-1">
-                {selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user.id)?.displayName || 'User'}
-              </h2>
-              <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={onBack}
+                  className="md:hidden p-1 -ml-2 mr-1 text-on-surface hover:bg-surface-container-low rounded-lg transition-colors flex items-center justify-center"
+                >
+                  <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h2 className="font-title-sm text-title-sm text-on-surface font-semibold flex items-center gap-1">
+                  {selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user.id)?.displayName || 'User'}
+                </h2>
+              </div>
+              <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
                 Active now
               </p>
@@ -486,27 +499,40 @@ export default function ChatWindow({ selectedChat }) {
               <div className="h-px bg-outline-variant/30 flex-1"></div>
             </div>
             
-            {messages && messages.map((m) => {
-              const isMine = m.sender?.clerkId === user.id;
-              const isMedia = m.content.startsWith('http') && m.content.includes('ik.imagekit.io');
-              const isAudio = isMedia && (m.content.endsWith('.webm') || m.content.endsWith('.mp3') || m.content.endsWith('.wav') || m.content.endsWith('.ogg'));
-              const isImage = isMedia && (m.content.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i));
-              const isFile = isMedia && !isAudio && !isImage;
-              
-              // Group reactions by emoji
-              const reactionCounts = {};
-              const userReactions = {}; // to highlight if current user reacted
-              if (m.reactions) {
-                m.reactions.forEach(r => {
-                  reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
-                  if (r.user === user.id || (r.user && r.user.clerkId === user.id)) {
-                    userReactions[r.emoji] = true;
-                  }
-                });
-              }
-              
-              return (
-                <div key={m._id} className={`flex items-end gap-sm group max-w-[85%] ${isMine ? 'self-end flex-row-reverse' : 'self-start'}`}>
+            <AnimatePresence>
+              {initialLoading ? (
+                Array(5).fill(0).map((_, i) => (
+                  <motion.div key={`skel-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`flex mb-lg ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                    {i % 2 !== 0 && <div className="w-8 h-8 rounded-full bg-surface-variant animate-pulse mr-sm shrink-0"></div>}
+                    <div className={`h-16 w-48 bg-surface-variant animate-pulse rounded-2xl ${i % 2 === 0 ? 'rounded-br-sm' : 'rounded-bl-sm'}`}></div>
+                  </motion.div>
+                ))
+              ) : messages.map((m, i) => {
+               const isMine = m.sender._id === user.id || m.sender.clerkId === user.id;
+               const isImage = m.type === 'image' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && (m.content.match(/\.(jpeg|jpg|gif|png)$/) != null || m.content.includes('tr:')));
+               const isAudio = m.type === 'audio' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && m.content.match(/\.(webm|mp3|wav|ogg)$/) != null);
+               const isFile = !isImage && !isAudio && m.content.startsWith('http') && m.content.includes('ik.imagekit.io');
+               
+               // Count reactions
+               const reactionCounts = {};
+               const userReactions = {};
+               if (m.reactions && Array.isArray(m.reactions)) {
+                 m.reactions.forEach(r => {
+                   reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+                   if (r.user === user.id || r.user?._id === user.id) {
+                     userReactions[r.emoji] = true;
+                   }
+                 });
+               }
+
+               return (
+                 <motion.div 
+                   key={m._id} 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   layout
+                   className={`flex items-end gap-sm group max-w-[85%] ${isMine ? 'self-end flex-row-reverse' : 'self-start'}`}
+                 >
                    {!isMine && (
                      <img src={m.sender?.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1" />
                    )}
@@ -622,10 +648,11 @@ export default function ChatWindow({ selectedChat }) {
                        )}
 
                      </div>
-                   </div>
-                </div>
-              );
-            })}
+                    </div>
+                 </motion.div>
+               );
+             })}
+            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
         </main>

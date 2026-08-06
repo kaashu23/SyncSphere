@@ -1,21 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { useUser } from '@clerk/clerk-react';
 import toast from 'react-hot-toast';
-import { IKContext, IKUpload } from 'imagekitio-react';
-
-const authenticator = async () => {
-  try {
-    const response = await fetch("http://localhost:5001/api/auth/imagekit");
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    const data = await response.json();
-    return { signature: data.signature, expire: data.expire, token: data.token };
-  } catch (error) {
-    throw new Error(`Authentication request failed: ${error.message}`);
-  }
-};
 
 export default function StatusFeed() {
   const { user } = useUser();
@@ -37,21 +24,33 @@ export default function StatusFeed() {
     fetchStatuses();
   }, []);
 
-  const handleStatusUploadSuccess = async (res) => {
+  const handleStatusUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     setUploading(true);
+    toast.loading('Uploading status...', { id: 'status-upload' });
     try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const { data: uploadData } = await axios.post('http://localhost:5001/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
       const config = { headers: { 'clerk-id': user.id } };
       await axios.post('http://localhost:5001/api/status', {
-        content: res.url,
+        content: uploadData.url,
         mediaType: 'image'
       }, config);
-      toast.success('Status uploaded!');
+      toast.success('Status uploaded!', { id: 'status-upload' });
       setIsCreateOpen(false);
       fetchStatuses();
     } catch (error) {
-      toast.error('Failed to post status');
+      toast.error('Failed to post status', { id: 'status-upload' });
     }
     setUploading(false);
+    e.target.value = null;
   };
 
   const openViewer = (group) => {
@@ -102,38 +101,38 @@ export default function StatusFeed() {
       </div>
 
       {/* Upload Modal */}
-      {isCreateOpen && (
-        <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface p-xl rounded-2xl flex flex-col items-center gap-md max-w-sm w-full shadow-2xl relative">
-              <button onClick={() => setIsCreateOpen(false)} className="absolute top-sm right-sm text-outline hover:text-error">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-              <h3 className="font-title-md text-on-surface mb-sm font-semibold">Post a Status</h3>
-              {uploading ? (
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              ) : (
-                <div className="relative w-full h-48 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center text-outline hover:bg-surface-container-low transition-colors cursor-pointer group">
-                  <IKUpload 
-                    fileName="status.jpg" 
-                    onSuccess={handleStatusUploadSuccess} 
-                    onError={() => toast.error('Upload failed')} 
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} 
-                  />
-                  <span className="material-symbols-outlined text-[32px] group-hover:scale-110 transition-transform text-primary">cloud_upload</span>
-                  <span className="font-body-sm mt-2">Click to upload image</span>
-                </div>
-              )}
-            </div>
+      {isCreateOpen && createPortal(
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface p-6 rounded-2xl flex flex-col items-center gap-4 min-w-[320px] max-w-[400px] w-full shadow-2xl relative">
+            <button onClick={() => setIsCreateOpen(false)} className="absolute top-4 right-4 text-outline hover:text-error transition-colors">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="font-title-md text-on-surface mb-2 font-semibold">Post a Status</h3>
+            {uploading ? (
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary my-4"></div>
+            ) : (
+              <div className="relative w-full h-48 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center text-outline hover:bg-surface-container-low transition-colors cursor-pointer group overflow-hidden">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleStatusUpload} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                  title="Upload status image"
+                />
+                <span className="material-symbols-outlined text-[32px] group-hover:scale-110 transition-transform text-primary">cloud_upload</span>
+                <span className="font-body-sm mt-2 font-medium">Click to upload image</span>
+              </div>
+            )}
           </div>
-        </IKContext>
+        </div>,
+        document.body
       )}
 
       {/* Viewer Modal */}
-      {viewerData && (
-        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center backdrop-blur-md">
+      {viewerData && createPortal(
+        <div className="fixed inset-0 z-[2000] bg-black/95 flex flex-col items-center justify-center backdrop-blur-md">
           {/* Progress Bars */}
-          <div className="absolute top-4 w-full max-w-md px-4 flex gap-1 z-10">
+          <div className="absolute top-4 w-full max-w-[400px] px-4 flex gap-1 z-10">
             {viewerData.statuses.map((s, i) => (
               <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                 <div className={`h-full bg-white transition-all duration-[5000ms] ease-linear ${i === viewerData.currentIndex ? 'w-full' : (i < viewerData.currentIndex ? 'w-full duration-0' : 'w-0 duration-0')}`}></div>
@@ -142,7 +141,7 @@ export default function StatusFeed() {
           </div>
 
           {/* Header */}
-          <div className="absolute top-8 w-full max-w-md px-4 flex justify-between items-center z-10">
+          <div className="absolute top-8 w-full max-w-[400px] px-4 flex justify-between items-center z-10">
             <div className="flex items-center gap-sm">
               <img src={viewerData.user.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover border border-white/20" />
               <div className="flex flex-col text-white shadow-sm">
@@ -152,16 +151,17 @@ export default function StatusFeed() {
                 </span>
               </div>
             </div>
-            <button onClick={closeViewer} className="text-white/80 hover:text-white bg-black/20 p-2 rounded-full backdrop-blur-md transition-colors">
+            <button onClick={closeViewer} className="text-white/80 hover:text-white bg-black/20 p-2 rounded-full backdrop-blur-md transition-colors z-20 cursor-pointer">
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
 
           {/* Media */}
-          <div className="w-full max-w-md aspect-[9/16] relative flex items-center justify-center overflow-hidden rounded-xl bg-surface-container-lowest/5" onClick={nextStatus}>
+          <div className="w-full max-w-[400px] aspect-[9/16] relative flex items-center justify-center overflow-hidden rounded-xl bg-surface-container-lowest/5" onClick={nextStatus}>
             <img src={viewerData.statuses[viewerData.currentIndex].content} className="w-full h-full object-contain pointer-events-none" />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

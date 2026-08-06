@@ -10,6 +10,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import StatusFeed from '../components/chat/StatusFeed';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ChatHome() {
   const { user } = useUser();
@@ -21,6 +22,8 @@ export default function ChatHome() {
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [activeTab, setActiveTab] = useState('Direct Messages');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -34,6 +37,8 @@ export default function ChatHome() {
       setChats(data);
     } catch (error) {
       console.error('Error fetching chats', error);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -105,9 +110,18 @@ export default function ChatHome() {
   };
 
   return (
-    <div className="bg-background text-on-background h-screen overflow-hidden flex antialiased">
-      {/* Shared Component: SideNavBar */}
-      <aside className="w-[260px] h-screen fixed left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-lg px-md gap-xs z-20">
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Side Navigation Bar */}
+      <aside className={`w-[260px] h-full bg-surface-lowest border-r border-outline-variant flex flex-col fixed left-0 top-0 z-50 transform transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Header */}
         <div className="flex items-center gap-sm px-sm mb-lg">
           <img src="/logo.png" alt="SyncSphere Logo" className="w-11 h-11 rounded-full border-2 border-primary-fixed shadow-ambient object-cover" />
@@ -181,13 +195,21 @@ export default function ChatHome() {
       </aside>
 
       {/* Main Content Area Wrapper */}
-      <div className="ml-[260px] flex w-[calc(100%-260px)] h-full">
+      <div className="md:ml-[260px] flex w-full md:w-[calc(100%-260px)] h-full">
         {/* Left Panel: Chat List */}
-        <section className="w-[360px] h-full border-r border-outline-variant bg-surface flex flex-col z-0">
+        <section className={`w-full md:w-[360px] h-full border-r border-outline-variant bg-surface flex-col z-0 ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="px-lg pt-lg pb-sm flex justify-between items-center">
-            <h2 className="font-title-sm text-title-sm text-on-surface font-semibold tracking-tight">
-              {activeTab === 'Channels' ? 'Channels' : activeTab === 'Direct Messages' ? 'Messages' : activeTab}
-            </h2>
+            <div className="flex items-center gap-2">
+              <button 
+                className="md:hidden p-1 -ml-2 text-on-surface hover:bg-surface-container-low rounded-lg transition-colors flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <span className="material-symbols-outlined">menu</span>
+              </button>
+              <h2 className="font-title-sm text-title-sm text-on-surface font-semibold tracking-tight">
+                {activeTab === 'Channels' ? 'Channels' : activeTab === 'Direct Messages' ? 'Messages' : activeTab}
+              </h2>
+            </div>
             {activeTab === 'Channels' && (
               <button 
                 onClick={() => setIsChannelModalOpen(true)}
@@ -220,67 +242,101 @@ export default function ChatHome() {
           <StatusFeed />
 
           <div className="flex-1 overflow-y-auto px-md pb-lg space-y-1 mt-2">
-            {searchResult.length > 0 ? (
-              searchResult.map((u) => (
-                <div key={u._id} onClick={() => accessChat(u._id)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low cursor-pointer transition-colors">
-                  <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
-                    <p className="font-body-sm text-on-surface-variant truncate">{u.email}</p>
-                  </div>
-                </div>
-              ))
-            ) : chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).length > 0 ? (
-              chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).map((chat) => (
-                <div 
-                  key={chat._id} 
-                  onClick={() => setSelectedChat(chat)} 
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group relative ${selectedChat?._id === chat._id ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}
-                >
-                  <img src={chat.isGroupChat ? '/logo.png' : getSenderPic(user, chat.users) || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  <div className="flex-1 min-w-0 pr-6">
-                    <div className="flex justify-between items-center w-full">
-                      <p className="font-body-md text-on-surface font-medium truncate">
-                        {!chat.isGroupChat ? getSender(user, chat.users) : chat.chatName}
-                      </p>
-                      <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={(e) => e.stopPropagation()} 
-                          className="p-1 rounded-full hover:bg-outline-variant/30 text-on-surface-variant group/menu focus:outline-none"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                          <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[100] opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto">
-                            <div onClick={(e) => handleArchiveChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-surface-container-low transition-colors text-on-surface cursor-pointer">
-                              <span className="material-symbols-outlined text-[16px]">archive</span> Archive
-                            </div>
-                            <div className="h-px w-full bg-outline-variant/30"></div>
-                            <div onClick={(e) => handleDeleteChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
-                              <span className="material-symbols-outlined text-[16px]">delete</span> Delete
-                            </div>
-                          </div>
-                        </button>
-                      </div>
+            <AnimatePresence>
+              {initialLoading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <motion.div 
+                    key={`skeleton-${i}`} 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }} 
+                    className="flex items-center gap-3 p-3 rounded-lg"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-surface-variant animate-pulse shrink-0"></div>
+                    <div className="flex-1 flex flex-col gap-2 min-w-0 pr-6">
+                      <div className="h-4 bg-surface-variant animate-pulse rounded-full w-2/3"></div>
+                      <div className="h-3 bg-surface-variant animate-pulse rounded-full w-4/5"></div>
                     </div>
-                    <p className="font-body-sm text-on-surface-variant truncate pr-2">
-                      {chat.latestMessage ? (
-                        chat.latestMessage.content.startsWith('http') && chat.latestMessage.content.includes('ik.imagekit.io')
-                          ? (chat.latestMessage.content.endsWith('.webm') || chat.latestMessage.content.endsWith('.mp3') || chat.latestMessage.content.endsWith('.wav') || chat.latestMessage.content.endsWith('.ogg') ? '🎵 Audio message' : '📎 File attached')
-                          : chat.latestMessage.content
-                      ) : 'Start a conversation'}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-on-surface-variant mt-10 font-body-sm">
-                No {activeTab.toLowerCase()} found.
-              </div>
-            )}
+                  </motion.div>
+                ))
+              ) : searchResult.length > 0 ? (
+                searchResult.map((u, i) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={u._id} 
+                    onClick={() => accessChat(u._id)} 
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low cursor-pointer transition-colors"
+                  >
+                    <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
+                    <div>
+                      <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
+                      <p className="font-body-sm text-on-surface-variant truncate">{u.email}</p>
+                    </div>
+                  </motion.div>
+                ))
+              ) : chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).length > 0 ? (
+                chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).map((chat, i) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={chat._id} 
+                    onClick={() => setSelectedChat(chat)} 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group relative ${selectedChat?._id === chat._id ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}
+                  >
+                    <img src={chat.isGroupChat ? '/logo.png' : getSenderPic(user, chat.users) || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    <div className="flex-1 min-w-0 pr-6">
+                      <div className="flex justify-between items-center w-full">
+                        <p className="font-body-md text-on-surface font-medium truncate">
+                          {!chat.isGroupChat ? getSender(user, chat.users) : chat.chatName}
+                        </p>
+                        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="p-1 rounded-full hover:bg-outline-variant/30 text-on-surface-variant group/menu focus:outline-none"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                            <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[100] opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto">
+                              <div onClick={(e) => handleArchiveChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-surface-container-low transition-colors text-on-surface cursor-pointer">
+                                <span className="material-symbols-outlined text-[16px]">archive</span> Archive
+                              </div>
+                              <div className="h-px w-full bg-outline-variant/30"></div>
+                              <div onClick={(e) => handleDeleteChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
+                                <span className="material-symbols-outlined text-[16px]">delete</span> Delete
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="font-body-sm text-on-surface-variant truncate pr-2">
+                        {chat.latestMessage ? (
+                          chat.latestMessage.content.startsWith('http') && chat.latestMessage.content.includes('ik.imagekit.io')
+                            ? (chat.latestMessage.content.endsWith('.webm') || chat.latestMessage.content.endsWith('.mp3') || chat.latestMessage.content.endsWith('.wav') || chat.latestMessage.content.endsWith('.ogg') ? '🎵 Audio message' : '📎 File attached')
+                            : chat.latestMessage.content
+                        ) : 'Start a conversation'}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-on-surface-variant mt-10 font-body-sm">
+                  No {activeTab.toLowerCase()} found.
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
-        {/* Right Panel: Chat Window Canvas */}
-        <ChatWindow selectedChat={selectedChat} />
+        {/* Right Panel: Chat Window */}
+        <div className={`flex-1 h-full ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+          <ChatWindow 
+            selectedChat={selectedChat} 
+            user={user} 
+            onBack={() => setSelectedChat(null)}
+          />
+        </div>
       </div>
 
       <SettingsModal 
