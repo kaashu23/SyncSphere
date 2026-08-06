@@ -234,7 +234,7 @@ export default function ChatHome() {
                 placeholder="Search users..." 
                 type="text"
                 value={search}
-                onChange={(e) => {setSearch(e.target.value); handleSearch(e.target.value);}}
+                onChange={(e) => handleSearch(e)}
               />
             </div>
           </div>
