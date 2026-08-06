@@ -23,7 +23,7 @@
   --color-primary: #5647c8;
   --color-primary-fixed-dim: #c6bfff;
   --color-surface-dim: #dadada;
-  --color-surface-container: #eeeeee;
+  --color-surface-container: #efefef;
   --color-on-primary-fixed: #160066;
   --color-on-tertiary: #ffffff;
   --color-on-background: #1a1c1c;
@@ -72,6 +72,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-on-surface antialiased;
   }

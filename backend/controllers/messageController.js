@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Chat = require('../models/Chat');
 
 exports.sendMessage = async (req, res) => {
-  const { content, chatId, type, replyTo } = req.body;
+  const { content, chatId, type, replyTo, forwardedFrom } = req.body;
   const clerkId = req.headers['clerk-id'];
 
   if (!content || !chatId) {
@@ -23,6 +23,31 @@ exports.sendMessage = async (req, res) => {
 
     if (replyTo) {
       newMessage.replyTo = replyTo;
+    }
+
+    if (forwardedFrom) {
+      newMessage.forwardedFrom = forwardedFrom;
+    }
+
+    if (type !== 'image' && type !== 'video' && type !== 'audio') {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = content.match(urlRegex);
+      if (urls && urls.length > 0) {
+        try {
+          const { getLinkPreview } = require('link-preview-js');
+          const previewData = await getLinkPreview(urls[0], { timeout: 2000 });
+          if (previewData && previewData.title) {
+            newMessage.linkPreview = {
+              url: previewData.url,
+              title: previewData.title,
+              description: previewData.description,
+              image: previewData.images && previewData.images.length > 0 ? previewData.images[0] : null
+            };
+          }
+        } catch (err) {
+          console.error('Link preview error:', err.message);
+        }
+      }
     }
 
     var message = await Message.create(newMessage);

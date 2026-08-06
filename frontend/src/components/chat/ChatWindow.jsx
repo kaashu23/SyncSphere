@@ -114,6 +114,8 @@ export default function ChatWindow({ selectedChat }) {
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [chatsList, setChatsList] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const typingTimeoutRef = useRef(null);
 
@@ -333,6 +335,43 @@ export default function ChatWindow({ selectedChat }) {
     }
   };
 
+  const handleForwardMessage = async (chatId) => {
+    if (!forwardingMessage) return;
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      const payload = {
+        content: forwardingMessage.content,
+        chatId: chatId,
+        type: forwardingMessage.type,
+        forwardedFrom: forwardingMessage._id
+      };
+      
+      const { data } = await axios.post('http://localhost:5001/api/messages', payload, config);
+      socket.emit('new message', data);
+      
+      if (chatId === selectedChat._id) {
+        setMessages(prev => [...prev, data]);
+      }
+      
+      toast.success('Message forwarded');
+      setForwardingMessage(null);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to forward message');
+    }
+  };
+
+  const openForwardModal = async (message) => {
+    setForwardingMessage(message);
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      const { data } = await axios.get('http://localhost:5001/api/chats', config);
+      setChatsList(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const confirmDeleteChat = async () => {
     try {
       await axios.delete(`http://localhost:5001/api/chats/${selectedChat._id}`, { headers: { 'clerk-id': user.id } });
@@ -484,6 +523,9 @@ export default function ChatWindow({ selectedChat }) {
                        <button onClick={() => { setReplyingToMessage(m); setEditingMessage(null); }} className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors flex" title="Reply">
                          <span className="material-symbols-outlined text-[16px]">reply</span>
                        </button>
+                       <button onClick={() => openForwardModal(m)} className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors flex" title="Forward">
+                         <span className="material-symbols-outlined text-[16px]">forward</span>
+                       </button>
                        {isMine && m.type === 'text' && (
                          <button onClick={() => { setEditingMessage(m); setReplyingToMessage(null); setNewMessage(m.content); }} className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors flex" title="Edit message">
                            <span className="material-symbols-outlined text-[16px]">edit</span>
@@ -507,6 +549,14 @@ export default function ChatWindow({ selectedChat }) {
                      {/* Message Bubble */}
                      <div className={`${isMine ? 'bg-primary-container text-on-primary-container rounded-br-sm' : 'bg-surface border border-outline-variant/50 text-on-surface rounded-bl-sm'} rounded-2xl p-sm font-body-md text-body-md shadow-ambient max-w-full flex flex-col relative`}>
                        
+                       {/* Forward Tag */}
+                       {m.forwardedFrom && (
+                         <div className="flex items-center gap-1 text-[10px] font-medium opacity-70 italic mb-1">
+                           <span className="material-symbols-outlined text-[12px]">forward</span>
+                           Forwarded
+                         </div>
+                       )}
+
                        {/* Reply Quote Block */}
                        {m.replyTo && (
                          <div className={`mb-2 px-2 py-1 border-l-2 rounded-r-md ${isMine ? 'bg-primary/20 border-primary text-on-primary-container/80' : 'bg-surface-container border-primary text-on-surface-variant'}`}>
@@ -525,7 +575,19 @@ export default function ChatWindow({ selectedChat }) {
                            <span className="truncate text-on-surface text-sm underline decoration-primary/30 underline-offset-2">Attachment</span>
                          </a>
                        ) : (
-                         <p className="px-xs whitespace-pre-wrap">{m.content}</p>
+                         <div className="flex flex-col gap-1">
+                           <p className="px-xs whitespace-pre-wrap">{m.content}</p>
+                           {m.linkPreview && (
+                             <a href={m.linkPreview.url} target="_blank" rel="noreferrer" className={`flex flex-col mt-1 border ${isMine ? 'border-primary/30 hover:bg-primary/10' : 'border-outline-variant hover:bg-surface-container-low'} rounded-lg overflow-hidden transition-colors w-full max-w-[280px]`}>
+                               {m.linkPreview.image && <img src={m.linkPreview.image} className="w-full h-[120px] object-cover" />}
+                               <div className="p-2 flex flex-col gap-1">
+                                 <span className="font-semibold text-xs truncate">{m.linkPreview.title}</span>
+                                 {m.linkPreview.description && <span className="text-[10px] opacity-80 line-clamp-2">{m.linkPreview.description}</span>}
+                                 <span className="text-[9px] font-medium opacity-60 mt-0.5 truncate">{new URL(m.linkPreview.url).hostname}</span>
+                               </div>
+                             </a>
+                           )}
+                         </div>
                        )}
                        
                        <div className={`flex items-center gap-1 mt-1 self-end ${isMine ? 'text-white/80' : 'text-on-surface-variant/80'}`}>
@@ -682,6 +744,36 @@ export default function ChatWindow({ selectedChat }) {
             </div>
           </div>
         </div>
+
+        {/* Forward Modal */}
+        {forwardingMessage && (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-surface rounded-2xl p-6 w-full min-w-[320px] max-w-[400px] shadow-2xl flex flex-col max-h-[80vh]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-on-surface">Forward Message</h3>
+                <button onClick={() => setForwardingMessage(null)} className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 pr-2">
+                {chatsList.length === 0 ? (
+                  <p className="text-center text-outline py-8">No chats found.</p>
+                ) : (
+                  chatsList.map(chat => {
+                    const otherUser = chat.users.find(u => u.clerkId !== user.id);
+                    return (
+                      <button key={chat._id} onClick={() => handleForwardMessage(chat._id)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container transition-colors text-left mb-1">
+                        <img src={otherUser?.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                        <span className="font-semibold text-on-surface truncate flex-1">{otherUser?.displayName || otherUser?.firstName || 'User'}</span>
+                        <span className="material-symbols-outlined text-outline">send</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <VideoCallModal 
           isOpen={isVideoCallOpen} 
