@@ -72,8 +72,8 @@ exports.sendRequest = async (req, res) => {
     const target = await User.findById(targetUserId);
     
     if (!sender || !target) return res.status(404).json({ message: 'User not found' });
-    if (sender.friends.includes(targetUserId)) return res.status(400).json({ message: 'Already friends' });
-    if (target.friendRequests.includes(sender._id)) return res.status(400).json({ message: 'Request already sent' });
+    if (sender.friends.some(id => id.toString() === targetUserId)) return res.status(400).json({ message: 'Already friends' });
+    if (target.friendRequests.some(id => id.toString() === sender._id.toString())) return res.status(400).json({ message: 'Request already sent' });
     
     target.friendRequests.push(sender._id);
     sender.sentRequests.push(target._id);

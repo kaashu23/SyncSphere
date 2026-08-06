@@ -24,6 +24,7 @@ export default function ChatHome() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [friendsData, setFriendsData] = useState({ friends: [], friendRequests: [], sentRequests: [] });
   
   const [activeTab, setActiveTab] = useState('Direct Messages');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -42,8 +43,21 @@ export default function ChatHome() {
     }
   };
 
+  const fetchFriends = async () => {
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/friends`, config);
+      setFriendsData(data);
+    } catch (error) {
+      console.error('Error fetching friends', error);
+    }
+  };
+
   useEffect(() => {
-    if (user) fetchChats();
+    if (user) {
+      fetchChats();
+      fetchFriends();
+    }
   }, [user]);
 
   const handleSearch = async (e) => {
@@ -74,6 +88,36 @@ export default function ChatHome() {
     } catch (error) {
       console.error('Error accessing chat', error);
     }
+  };
+
+  const sendFriendRequest = async (userId, e) => {
+    e?.stopPropagation();
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/request/${userId}`, {}, config);
+      toast.success('Friend request sent');
+      fetchFriends();
+    } catch (err) { toast.error(err.response?.data?.message || 'Error sending request'); }
+  };
+
+  const acceptFriendRequest = async (userId, e) => {
+    e?.stopPropagation();
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/accept/${userId}`, {}, config);
+      toast.success('Request accepted');
+      fetchFriends();
+    } catch (err) { toast.error('Error accepting request'); }
+  };
+
+  const rejectFriendRequest = async (userId, e) => {
+    e?.stopPropagation();
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/reject/${userId}`, {}, config);
+      toast.success('Request rejected');
+      fetchFriends();
+    } catch (err) { toast.error('Error rejecting request'); }
   };
 
   const getSender = (loggedUser, users) => {
@@ -162,6 +206,16 @@ export default function ChatHome() {
           >
             <span className="material-symbols-outlined font-light text-[24px]">calendar_today</span>
             <span className="font-body-md text-body-md">Events</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('Requests')}
+            className={`flex items-center gap-sm px-sm py-sm rounded-lg transition-colors duration-200 cursor-pointer w-full text-left ${activeTab === 'Requests' ? 'bg-secondary-fixed text-on-secondary-fixed font-medium' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
+          >
+            <span className="material-symbols-outlined font-light text-[24px]">group_add</span>
+            <span className="font-body-md text-body-md flex-1">Requests</span>
+            {friendsData.friendRequests.length > 0 && (
+              <span className="bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full">{friendsData.friendRequests.length}</span>
+            )}
           </button>
           
           <div className="flex-1"></div>
@@ -260,22 +314,75 @@ export default function ChatHome() {
                   </motion.div>
                 ))
               ) : searchResult.length > 0 ? (
-                searchResult.map((u, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    key={u._id} 
-                    onClick={() => accessChat(u._id)} 
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low cursor-pointer transition-colors"
-                  >
-                    <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
-                    <div>
-                      <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
-                      <p className="font-body-sm text-on-surface-variant truncate">{u.email}</p>
-                    </div>
-                  </motion.div>
-                ))
+                searchResult.map((u, i) => {
+                  const isFriend = friendsData.friends.some(f => f._id === u._id);
+                  const isSent = friendsData.sentRequests.some(r => r._id === u._id);
+                  const isReceived = friendsData.friendRequests.some(r => r._id === u._id);
+
+                  return (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      key={u._id} 
+                      onClick={() => { if (isFriend) accessChat(u._id); }} 
+                      className={`flex justify-between items-center p-3 rounded-lg transition-colors ${isFriend ? 'hover:bg-surface-container-low cursor-pointer' : 'bg-surface'}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
+                        <div>
+                          <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
+                          <p className="font-body-sm text-on-surface-variant truncate">{u.username ? `@${u.username}` : u.email}</p>
+                        </div>
+                      </div>
+                      
+                      {isFriend ? (
+                        <button className="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
+                        </button>
+                      ) : isSent ? (
+                        <span className="font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">Pending</span>
+                      ) : isReceived ? (
+                        <button onClick={(e) => acceptFriendRequest(u._id, e)} className="bg-primary text-on-primary font-label-md px-3 py-1.5 rounded-lg hover:bg-primary-container transition-colors">
+                          Accept
+                        </button>
+                      ) : (
+                        <button onClick={(e) => sendFriendRequest(u._id, e)} className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[16px]">person_add</span> Add
+                        </button>
+                      )}
+                    </motion.div>
+                  );
+                })
+              ) : activeTab === 'Requests' ? (
+                <>
+                  {friendsData.friendRequests.length === 0 && <p className="text-on-surface-variant text-center font-body-sm mt-4">No pending requests</p>}
+                  {friendsData.friendRequests.map((u, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      key={u._id} 
+                      className="flex justify-between items-center p-3 rounded-lg bg-surface border border-outline-variant/30 mb-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
+                        <div>
+                          <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
+                          <p className="font-body-sm text-on-surface-variant truncate">{u.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={(e) => rejectFriendRequest(u._id, e)} className="p-1.5 text-on-surface-variant hover:bg-error-container hover:text-error rounded-full transition-colors flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                        <button onClick={(e) => acceptFriendRequest(u._id, e)} className="bg-primary text-on-primary font-label-md px-3 py-1.5 rounded-lg hover:bg-primary-container transition-colors flex items-center justify-center">
+                          Accept
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </>
               ) : chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).length > 0 ? (
                 chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).map((chat, i) => (
                   <motion.div 

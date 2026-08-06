@@ -419,15 +419,15 @@ export default function ChatWindow({ selectedChat, onBack }) {
     <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
       <div className="flex-1 flex flex-col h-screen relative bg-background">
         {/* TopAppBar */}
-        <header className="flex justify-between items-center w-full px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
-          <div className="flex items-center gap-lg w-1/3">
-            <span className="font-headline-md text-headline-md font-bold text-primary">SyncSphere</span>
-            <div className="relative w-full max-w-[240px]">
+        <header className="flex justify-between items-center w-full px-4 md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
+          <div className="flex items-center gap-2 md:gap-lg flex-1">
+            <span className="font-headline-md text-headline-md font-bold text-primary truncate md:overflow-visible">SyncSphere</span>
+            <div className="relative w-full max-w-[240px] hidden md:block">
               <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
               <input className="w-full bg-surface-container-low border-none rounded-full py-xs pl-xl pr-sm font-body-sm text-body-sm focus:ring-1 focus:ring-primary focus:bg-surface transition-all placeholder:text-outline-variant text-on-surface" placeholder="Search..." type="text"/>
             </div>
           </div>
-          <div className="flex items-center gap-sm text-on-surface-variant">
+          <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant">
             <button onClick={startCall} className="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
               <span className="material-symbols-outlined">call</span>
             </button>
@@ -443,8 +443,8 @@ export default function ChatWindow({ selectedChat, onBack }) {
         </header>
 
         {/* Active Chat Sub-Header */}
-        <div className="flex items-center justify-between px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-sm relative">
-          <div className="flex items-center gap-md">
+        <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-sm relative">
+          <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
               <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? '/logo.png' : selectedChat.users.find(u => u.clerkId !== user.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
@@ -492,7 +492,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
 
         {/* Chat Canvas */}
         <main className="flex-1 overflow-y-auto bg-background flex flex-col items-center relative">
-          <div className="w-full max-w-[900px] flex-1 px-margin-desktop py-lg flex flex-col gap-sm justify-end pb-xl">
+          <div className="w-full max-w-[900px] flex-1 px-4 md:px-margin-desktop py-lg flex flex-col gap-sm justify-end pb-xl">
             <div className="flex items-center justify-center gap-md my-sm">
               <div className="h-px bg-outline-variant/30 flex-1"></div>
               <span className="font-label-caps text-label-caps text-outline px-sm py-xs bg-surface-container-lowest rounded-full border border-outline-variant/20 shadow-ambient">TODAY</span>
@@ -526,13 +526,13 @@ export default function ChatWindow({ selectedChat, onBack }) {
                }
 
                return (
-                 <motion.div 
-                   key={m._id} 
-                   initial={{ opacity: 0, y: 10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   layout
-                   className={`flex items-end gap-sm group max-w-[85%] ${isMine ? 'self-end flex-row-reverse' : 'self-start'}`}
-                 >
+                  <motion.div 
+                    key={m._id} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    layout
+                    className={`flex items-end gap-2 md:gap-sm group max-w-[95%] md:max-w-[85%] ${isMine ? 'self-end flex-row-reverse' : 'self-start'}`}
+                  >
                    {!isMine && (
                      <img src={m.sender?.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1" />
                    )}
@@ -658,7 +658,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
         </main>
 
         {/* Bottom Input Bar */}
-        <div className="w-full bg-background border-t border-outline-variant/30 py-md px-margin-desktop flex flex-col items-center shrink-0 relative">
+        <div className="w-full bg-background border-t border-outline-variant/30 py-2 md:py-md px-2 md:px-margin-desktop flex flex-col items-center shrink-0 relative">
           
           {/* Active Status Indicators (Typing / Editing) */}
           <div className="w-full max-w-[900px] mb-2 px-sm flex flex-col gap-1">
@@ -702,17 +702,17 @@ export default function ChatWindow({ selectedChat, onBack }) {
                 <EmojiPicker emojiStyle="native" onEmojiClick={onEmojiClick} theme={theme} />
               </div>
             )}
-            <div className="flex items-end gap-sm bg-surface border border-outline-variant rounded-2xl px-sm py-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
+            <div className="flex items-end gap-1 md:gap-sm bg-surface border border-outline-variant rounded-2xl px-1 md:px-sm py-1 md:py-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
               
               {audioState === 'idle' && (
                 <>
-                  <div className="relative p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low self-end mb-0.5 overflow-hidden">
+                  <div className="relative p-1 md:p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low self-end mb-0.5 overflow-hidden">
                     <input type="file" onChange={handleAttachFile} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Attach file" />
-                    <span className="material-symbols-outlined text-[22px] pointer-events-none">attach_file</span>
+                    <span className="material-symbols-outlined text-[20px] md:text-[22px] pointer-events-none">attach_file</span>
                   </div>
                   <textarea 
-                    className="flex-1 bg-transparent border-none resize-none focus:ring-0 font-body-md text-body-md text-on-surface placeholder:text-outline py-sm px-xs min-h-[44px] max-h-[120px] outline-none" 
-                    placeholder="Type a message..." 
+                    className="flex-1 bg-transparent border-none resize-none focus:ring-0 font-body-md text-body-md text-on-surface placeholder:text-outline py-2 md:py-sm px-1 md:px-xs min-h-[44px] max-h-[120px] outline-none" 
+                    placeholder="Message..." 
                     rows="1"
                     value={newMessage}
                     onChange={handleTyping}
@@ -723,16 +723,16 @@ export default function ChatWindow({ selectedChat, onBack }) {
                       }
                     }}
                   ></textarea>
-                  <div className="flex items-center gap-1 self-end mb-0.5 pr-xs">
-                    <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-sm transition-colors rounded-full hover:bg-surface-container-low ${showEmojiPicker ? 'text-primary' : 'text-outline hover:text-primary'}`}>
-                      <span className="material-symbols-outlined text-[22px]">mood</span>
+                  <div className="flex items-center gap-0 md:gap-1 self-end mb-0.5 pr-0 md:pr-xs">
+                    <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-1 md:p-sm transition-colors rounded-full hover:bg-surface-container-low ${showEmojiPicker ? 'text-primary' : 'text-outline hover:text-primary'}`}>
+                      <span className="material-symbols-outlined text-[20px] md:text-[22px]">mood</span>
                     </button>
-                    <button onClick={startRecording} className="p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low">
-                      <span className="material-symbols-outlined text-[22px]">mic</span>
+                    <button onClick={startRecording} className="p-1 md:p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low">
+                      <span className="material-symbols-outlined text-[20px] md:text-[22px]">mic</span>
                     </button>
                   </div>
-                  <button onClick={sendMessage} className="p-sm bg-primary text-on-primary hover:bg-primary-container transition-colors rounded-xl self-end mb-0.5 ml-xs flex items-center justify-center shadow-ambient active:scale-95 duration-150">
-                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+                  <button onClick={sendMessage} className="p-2 md:p-sm bg-primary text-on-primary hover:bg-primary-container transition-colors rounded-xl self-end mb-0.5 ml-1 md:ml-xs flex items-center justify-center shadow-ambient active:scale-95 duration-150">
+                    <span className="material-symbols-outlined text-[18px] md:text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
                   </button>
                 </>
               )}
@@ -775,7 +775,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
         {/* Forward Modal */}
         {forwardingMessage && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-surface rounded-2xl p-6 w-full min-w-[320px] max-w-[400px] shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="bg-surface rounded-2xl p-4 md:p-6 w-full max-w-[400px] shadow-2xl flex flex-col max-h-[80vh]">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-on-surface">Forward Message</h3>
                 <button onClick={() => setForwardingMessage(null)} className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors">

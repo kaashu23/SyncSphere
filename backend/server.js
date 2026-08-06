@@ -80,50 +80,50 @@ io.on('connection', (socket) => {
 
     chat.users.forEach((user) => {
       if (user._id == newMessageRecieved.sender._id) return;
-      socket.in(user._id).emit('message recieved', newMessageRecieved);
+      socket.in(user.clerkId || user._id).emit('message recieved', newMessageRecieved);
     });
   });
 
   socket.on('mark read', ({ chatId, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      socket.in(u._id).emit('messages read', chatId);
+      socket.in(u.clerkId || u._id).emit('messages read', chatId);
     });
   });
 
   socket.on('delete message', ({ messageId, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      socket.in(u._id).emit('message deleted', messageId);
+      socket.in(u.clerkId || u._id).emit('message deleted', messageId);
     });
   });
 
   socket.on('message reaction', ({ message, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      socket.in(u._id).emit('message reacted', message);
+      socket.in(u.clerkId || u._id).emit('message reacted', message);
     });
   });
 
   socket.on('message edit', ({ message, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      socket.in(u._id).emit('message edited', message);
+      socket.in(u.clerkId || u._id).emit('message edited', message);
     });
   });
 
   socket.on('message star', ({ message, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      socket.in(u._id).emit('message starred', message);
+      socket.in(u.clerkId || u._id).emit('message starred', message);
     });
   });
 
   socket.on('typing:start', ({ chatId, userId, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      if (u._id !== userId) {
-        socket.in(u._id).emit('typing:start', { chatId, userId });
+      if (u.clerkId !== userId && u._id !== userId) {
+        socket.in(u.clerkId || u._id).emit('typing:start', { chatId, userId });
       }
     });
   });
@@ -131,8 +131,8 @@ io.on('connection', (socket) => {
   socket.on('typing:stop', ({ chatId, userId, users }) => {
     if (!users) return;
     users.forEach((u) => {
-      if (u._id !== userId) {
-        socket.in(u._id).emit('typing:stop', { chatId, userId });
+      if (u.clerkId !== userId && u._id !== userId) {
+        socket.in(u.clerkId || u._id).emit('typing:stop', { chatId, userId });
       }
     });
   });
