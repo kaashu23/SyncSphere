@@ -32,7 +32,7 @@ export default function Onboarding() {
     formData.append('image', file);
 
     try {
-      const { data } = await axios.post('http://localhost:5001/api/upload', formData, {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setAvatar(data.url);
@@ -52,7 +52,7 @@ export default function Onboarding() {
     const checkUser = async () => {
       if (!user) return;
       try {
-        await axios.get('http://localhost:5001/api/users/me', { headers: { 'clerk-id': user.id } });
+        await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, { headers: { 'clerk-id': user.id } });
         // User exists, redirect immediately
         navigate('/chat');
       } catch (err) {
@@ -72,7 +72,7 @@ export default function Onboarding() {
     
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/users/onboard', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/onboard`, {
         clerkId: user.id,
         email: user.primaryEmailAddress?.emailAddress,
         displayName: user.fullName || user.firstName || username,

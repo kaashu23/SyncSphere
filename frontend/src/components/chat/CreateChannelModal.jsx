@@ -20,7 +20,7 @@ export default function CreateChannelModal({ isOpen, onClose, onCreated }) {
   const searchUsers = async (query) => {
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.get(`http://localhost:5001/api/users?search=${query}`, config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users?search=${query}`, config);
       setUsersList(data);
     } catch (error) {
       console.error(error);
@@ -45,7 +45,7 @@ export default function CreateChannelModal({ isOpen, onClose, onCreated }) {
     setLoading(true);
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post('http://localhost:5001/api/chats/group', {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/group`, {
         name,
         users: JSON.stringify(selectedUsers.map(u => u._id))
       }, config);

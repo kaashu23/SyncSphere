@@ -10,12 +10,12 @@ import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ENDPOINT = 'http://localhost:5001';
+const ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}`;
 let socket;
 
 const authenticator = async () => {
   try {
-    const response = await fetch("http://localhost:5001/api/auth/imagekit");
+    const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit");
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -61,7 +61,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
           setMessages((messages) => [...messages, newMessageRecieved]);
           // Mark as read immediately when active
           const config = { headers: { 'clerk-id': user.id } };
-          axios.post('http://localhost:5001/api/messages/read', { chatId: selectedChat._id }, config).then(() => {
+          axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config).then(() => {
             socket.emit('mark read', { chatId: selectedChat._id, users: selectedChat.users });
           });
         }
@@ -126,12 +126,12 @@ export default function ChatWindow({ selectedChat, onBack }) {
     try {
       setInitialLoading(true);
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.get(`http://localhost:5001/api/messages/${selectedChat._id}`, config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${selectedChat._id}`, config);
       setMessages(data);
       socket.emit('join chat', selectedChat._id);
       
       // Mark as read
-      await axios.post('http://localhost:5001/api/messages/read', { chatId: selectedChat._id }, config);
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config);
       socket.emit('mark read', { chatId: selectedChat._id, users: selectedChat.users });
     } catch (error) {
       console.error(error);
@@ -158,7 +158,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
         socket.emit('typing:stop', { chatId: selectedChat._id, userId: user.id, users: selectedChat.users });
         
         if (editingMessage) {
-          const { data } = await axios.put(`http://localhost:5001/api/messages/${editingMessage._id}`, { content: tempMessage }, config);
+          const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${editingMessage._id}`, { content: tempMessage }, config);
           socket.emit('message edit', { message: data, users: selectedChat.users });
           setMessages(prev => prev.map(m => m._id === data._id ? data : m));
           setEditingMessage(null);
@@ -170,7 +170,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
           if (replyingToMessage) {
             payload.replyTo = replyingToMessage._id;
           }
-          const { data } = await axios.post('http://localhost:5001/api/messages', payload, config);
+          const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, payload, config);
           socket.emit('new message', data);
           setMessages(prev => [...prev, data]);
           setReplyingToMessage(null);
@@ -202,12 +202,12 @@ export default function ChatWindow({ selectedChat, onBack }) {
     
     try {
       toast.loading('Uploading file...', { id: 'upload' });
-      const { data: uploadData } = await axios.post('http://localhost:5001/api/upload', formData, {
+      const { data: uploadData } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post('http://localhost:5001/api/messages', {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
       }, config);
@@ -266,11 +266,11 @@ export default function ChatWindow({ selectedChat, onBack }) {
     formData.append('image', audioBlob, 'audio_message.webm');
     
     try {
-      const { data: uploadData } = await axios.post('http://localhost:5001/api/upload', formData, {
+      const { data: uploadData } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post('http://localhost:5001/api/messages', {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
       }, config);
@@ -286,7 +286,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
 
   const handleArchiveChat = async () => {
     try {
-      await axios.put(`http://localhost:5001/api/chats/${selectedChat._id}/archive`, {}, { headers: { 'clerk-id': user.id } });
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/archive`, {}, { headers: { 'clerk-id': user.id } });
       toast.success('Chat archived');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) { toast.error('Error archiving chat'); }
@@ -294,7 +294,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
 
   const handleMuteChat = async () => {
     try {
-      await axios.put(`http://localhost:5001/api/chats/${selectedChat._id}/mute`, {}, { headers: { 'clerk-id': user.id } });
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/mute`, {}, { headers: { 'clerk-id': user.id } });
       toast.success('Chat notifications muted');
     } catch (err) { toast.error('Error muting chat'); }
   };
@@ -306,7 +306,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
   const handleDeleteMessage = async (messageId) => {
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      await axios.delete(`http://localhost:5001/api/messages/${messageId}`, config);
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}`, config);
       setMessages(prev => prev.filter(m => m._id !== messageId));
       socket.emit('delete message', { messageId, users: selectedChat.users });
       toast.success('Message deleted');
@@ -319,7 +319,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
     try {
       setActiveReactionMessageId(null); // close picker immediately
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post(`http://localhost:5001/api/messages/${messageId}/react`, { emoji }, config);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/react`, { emoji }, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
       socket.emit('message reaction', { message: data, users: selectedChat.users });
     } catch (error) {
@@ -331,7 +331,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
   const handleStarMessage = async (messageId) => {
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post(`http://localhost:5001/api/messages/${messageId}/star`, {}, config);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/star`, {}, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
       socket.emit('message star', { message: data, users: selectedChat.users });
     } catch (error) {
@@ -351,7 +351,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
         forwardedFrom: forwardingMessage._id
       };
       
-      const { data } = await axios.post('http://localhost:5001/api/messages', payload, config);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, payload, config);
       socket.emit('new message', data);
       
       if (chatId === selectedChat._id) {
@@ -370,7 +370,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
     setForwardingMessage(message);
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.get('http://localhost:5001/api/chats', config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
       setChatsList(data);
     } catch (error) {
       console.error(error);
@@ -379,7 +379,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
 
   const confirmDeleteChat = async () => {
     try {
-      await axios.delete(`http://localhost:5001/api/chats/${selectedChat._id}`, { headers: { 'clerk-id': user.id } });
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}`, { headers: { 'clerk-id': user.id } });
       toast.success('Chat deleted');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) { toast.error('Error deleting chat'); }

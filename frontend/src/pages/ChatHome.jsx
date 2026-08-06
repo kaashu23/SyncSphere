@@ -33,7 +33,7 @@ export default function ChatHome() {
   const fetchChats = async () => {
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.get('http://localhost:5001/api/chats', config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
       setChats(data);
     } catch (error) {
       console.error('Error fetching chats', error);
@@ -55,7 +55,7 @@ export default function ChatHome() {
     try {
       setLoading(true);
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.get(`http://localhost:5001/api/users?search=${e.target.value}`, config);
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users?search=${e.target.value}`, config);
       setLoading(false);
       setSearchResult(data);
     } catch (error) {
@@ -66,7 +66,7 @@ export default function ChatHome() {
   const accessChat = async (userId) => {
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      const { data } = await axios.post('http://localhost:5001/api/chats', { userId }, config);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, { userId }, config);
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSelectedChat(data);
       setSearch('');
@@ -86,7 +86,7 @@ export default function ChatHome() {
   const handleArchiveChat = async (chatId, e) => {
     e.stopPropagation();
     try {
-      await axios.put(`http://localhost:5001/api/chats/${chatId}/archive`, {}, { headers: { 'clerk-id': user.id } });
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/archive`, {}, { headers: { 'clerk-id': user.id } });
       toast.success('Chat archived');
       fetchChats();
       if(selectedChat?._id === chatId) setSelectedChat(null);
@@ -101,7 +101,7 @@ export default function ChatHome() {
   const confirmDelete = async () => {
     if(!deleteChatId) return;
     try {
-      await axios.delete(`http://localhost:5001/api/chats/${deleteChatId}`, { headers: { 'clerk-id': user.id } });
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${deleteChatId}`, { headers: { 'clerk-id': user.id } });
       toast.success('Chat deleted');
       fetchChats();
       if(selectedChat?._id === deleteChatId) setSelectedChat(null);

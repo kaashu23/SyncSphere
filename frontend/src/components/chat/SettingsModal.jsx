@@ -6,7 +6,7 @@ import { IKContext, IKUpload } from 'imagekitio-react';
 
 const authenticator = async () => {
   try {
-    const response = await fetch("http://localhost:5001/api/auth/imagekit");
+    const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit");
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -29,7 +29,7 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }) {
     setLoading(true);
     try {
       const config = { headers: { 'clerk-id': user.id } };
-      await axios.post('http://localhost:5001/api/users/onboard', {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/onboard`, {
         clerkId: user.id,
         username: user.username || user.primaryEmailAddress?.emailAddress?.split('@')[0],
         email: user.primaryEmailAddress?.emailAddress,

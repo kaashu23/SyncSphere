@@ -13,7 +13,7 @@ export default function StatusFeed() {
 
   const fetchStatuses = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5001/api/status');
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/status`);
       setGroupedStatuses(data);
     } catch (error) {
       console.error(error);
@@ -34,12 +34,12 @@ export default function StatusFeed() {
       const formData = new FormData();
       formData.append('image', file);
       
-      const { data: uploadData } = await axios.post('http://localhost:5001/api/upload', formData, {
+      const { data: uploadData } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       const config = { headers: { 'clerk-id': user.id } };
-      await axios.post('http://localhost:5001/api/status', {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/status`, {
         content: uploadData.url,
         mediaType: 'image'
       }, config);
