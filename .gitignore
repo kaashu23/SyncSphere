@@ -10,7 +10,5 @@ frontend/.env
 
 # Custom ignores
 uiux_images/
-SyncSphere_Plan.txt
-
 test/
-uiux images/
+SyncSphere_Plan.txt
