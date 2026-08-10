@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const chatSchema = new mongoose.Schema(
   {
     chatName: { type: String, trim: true },
+    chatAvatar: { type: String, default: '' },
     isGroupChat: { type: Boolean, default: false },
     users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     latestMessage: {
@@ -10,6 +11,7 @@ const chatSchema = new mongoose.Schema(
       ref: 'Message',
     },
     groupAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     mutedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     archivedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   },

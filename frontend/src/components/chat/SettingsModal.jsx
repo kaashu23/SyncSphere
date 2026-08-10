@@ -6,7 +6,7 @@ import { IKContext, IKUpload } from 'imagekitio-react';
 
 const authenticator = async () => {
   try {
-    const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit");
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit`);
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -68,7 +68,7 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }) {
 
           <div className="flex flex-col gap-2 items-center">
             <div className="relative group cursor-pointer w-24 h-24">
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover border-4 border-surface shadow-sm" />
+              <img src={avatarUrl || '/avatars/avatar_female_light.jpg'} alt="Avatar" className="w-full h-full rounded-full object-cover border-4 border-surface shadow-sm" />
               <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                 <IKUpload fileName="avatar.jpg" onError={onError} onSuccess={onSuccess} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} />
                 <span className="material-symbols-outlined text-white pointer-events-none">photo_camera</span>

@@ -13,7 +13,11 @@ exports.sendMessage = async (req, res) => {
 
   try {
     const currentUser = await User.findOne({ clerkId });
-    
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
     var newMessage = {
       sender: currentUser._id,
       content: content,

@@ -27,6 +27,8 @@ export default function ChatHome() {
   const [checkingOnboarded, setCheckingOnboarded] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [friendsData, setFriendsData] = useState({ friends: [], friendRequests: [], sentRequests: [] });
+  const friendsDataRef = useRef(friendsData);
+  const selectedChatRef = useRef(selectedChat);
   
   const [activeTab, setActiveTab] = useState('Direct Messages');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -38,8 +40,10 @@ export default function ChatHome() {
       const config = { headers: { 'clerk-id': user.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
       setChats(data);
+      return data;
     } catch (error) {
       console.error('Error fetching chats', error);
+      return [];
     } finally {
       setInitialLoading(false);
     }
@@ -61,6 +65,14 @@ export default function ChatHome() {
       fetchFriends();
     }
   }, [user]);
+
+  useEffect(() => {
+    friendsDataRef.current = friendsData;
+  }, [friendsData]);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   // Guard: redirect to onboarding if the user hasn't set up a profile yet
   useEffect(() => {
@@ -84,10 +96,15 @@ export default function ChatHome() {
     if (!chatId) return;
     setChats(prev => {
       const existing = prev.find(c => c._id === chatId);
-      const chatItem = existing
-        ? { ...existing, latestMessage: message }
-        : { ...(message.chat || {}), _id: chatId, latestMessage: message };
-      return [chatItem, ...prev.filter(c => c._id !== chatId)];
+      if (existing) {
+        return [{ ...existing, latestMessage: message }, ...prev.filter(c => c._id !== chatId)];
+      }
+      // Chat not in the list yet — only add it if the sender is still a friend
+      // (prevents a removed friend's stray message from re-adding the chat)
+      const senderId = message.sender?._id || message.sender?.clerkId;
+      const isFriend = friendsDataRef.current.friends.some(f => f._id === senderId);
+      if (!isFriend) return prev;
+      return [{ ...(message.chat || {}), _id: chatId, latestMessage: message }, ...prev];
     });
   };
 
@@ -113,6 +130,15 @@ export default function ChatHome() {
     socket.on('friend-accepted', () => {
       fetchFriends();
       fetchChats();
+    });
+
+    socket.on('group updated', async (updatedChat) => {
+      const freshChats = await fetchChats();
+      const current = selectedChatRef.current;
+      if (current?.isGroupChat && current._id === updatedChat?._id) {
+        const updated = freshChats.find((c) => c._id === updatedChat._id);
+        if (updated) setSelectedChat(updated);
+      }
     });
 
     return () => socket.disconnect();
@@ -187,6 +213,21 @@ export default function ChatHome() {
     return users[0]?.clerkId === loggedUser?.id ? users[1]?.avatarUrl : users[0]?.avatarUrl;
   };
 
+  const handleFriendRemoved = (friendId) => {
+    setChats(prev => prev.filter(c => c.isGroupChat || !c.users.some(u => u._id === friendId)));
+    if (selectedChat && !selectedChat.isGroupChat && selectedChat.users.some(u => u._id === friendId)) {
+      setSelectedChat(null);
+    }
+  };
+
+  const updateChatInList = (updatedChat) => {
+    setChats(prev => {
+      const rest = prev.filter(c => c._id !== updatedChat._id);
+      return [updatedChat, ...rest];
+    });
+    setSelectedChat(updatedChat);
+  };
+
   const handleRemoveFriend = async (friendId, e) => {
     e.stopPropagation();
     try {
@@ -194,14 +235,25 @@ export default function ChatHome() {
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${friendId}`, {}, config);
       toast.success('Friend removed');
       fetchFriends();
+      handleFriendRemoved(friendId);
     } catch (err) { toast.error('Error removing friend'); }
   };
 
   const handleArchiveChat = async (chatId, e) => {
     e.stopPropagation();
     try {
+      const chat = chats.find(c => c._id === chatId);
+      const wasArchived = chat?.archivedBy?.some(u => u.clerkId === user.id);
       await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/archive`, {}, { headers: { 'clerk-id': user.id } });
-      toast.success('Chat archived');
+      // Update the list immediately so archived/unarchived state is reflected right away
+      setChats(prev => prev.map(c => {
+        if (c._id !== chatId) return c;
+        const archivedBy = wasArchived
+          ? (c.archivedBy || []).filter(u => u.clerkId !== user.id)
+          : [{ _id: user.id, clerkId: user.id }, ...(c.archivedBy || [])];
+        return { ...c, archivedBy };
+      }));
+      toast.success(wasArchived ? 'Chat unarchived' : 'Chat archived');
       fetchChats();
       if(selectedChat?._id === chatId) setSelectedChat(null);
     } catch (err) { toast.error('Error archiving chat'); }
@@ -222,6 +274,14 @@ export default function ChatHome() {
     } catch (err) { toast.error('Error deleting chat'); }
     setDeleteChatId(null);
   };
+
+  const isChatArchivedForMe = (c) => c.archivedBy?.some(u => u.clerkId === user.id);
+  const archivedChats = chats.filter(c => isChatArchivedForMe(c));
+  const visibleChats = chats.filter(c => {
+    if (activeTab === 'Archived') return isChatArchivedForMe(c);
+    const matchesType = activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat;
+    return matchesType && !isChatArchivedForMe(c);
+  });
 
   if (checkingOnboarded) {
     return (
@@ -293,6 +353,16 @@ export default function ChatHome() {
             <span className="font-body-md text-body-md flex-1">Requests</span>
             {friendsData.friendRequests.length > 0 && (
               <span className="bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full">{friendsData.friendRequests.length}</span>
+            )}
+          </button>
+          <button 
+            onClick={() => setActiveTab('Archived')}
+            className={`flex items-center gap-sm px-sm py-sm rounded-lg transition-colors duration-200 cursor-pointer w-full text-left ${activeTab === 'Archived' ? 'bg-secondary-fixed text-on-secondary-fixed font-medium' : 'text-on-surface-variant hover:bg-surface-container-low'}`}
+          >
+            <span className="material-symbols-outlined font-light text-[24px]">archive</span>
+            <span className="font-body-md text-body-md flex-1">Archived</span>
+            {archivedChats.length > 0 && (
+              <span className="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-1.5 py-0.5 rounded-full">{archivedChats.length}</span>
             )}
           </button>
           
@@ -461,8 +531,8 @@ export default function ChatHome() {
                     </motion.div>
                   ))}
                 </>
-              ) : chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).length > 0 ? (
-                chats.filter(c => (activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat) && !c.archivedBy?.some(u => u.clerkId === user.id)).map((chat, i) => (
+              ) : visibleChats.length > 0 ? (
+                visibleChats.map((chat, i) => (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -471,13 +541,13 @@ export default function ChatHome() {
                     onClick={() => setSelectedChat(chat)} 
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group relative ${selectedChat?._id === chat._id ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}
                   >
-                    <img src={chat.isGroupChat ? '/logo.png' : getSenderPic(user, chat.users) || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    <img src={chat.isGroupChat ? (chat.chatAvatar || '/logo.png') : getSenderPic(user, chat.users) || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
                     <div className="flex-1 min-w-0 pr-6">
                       <div className="flex justify-between items-center w-full">
                         <p className="font-body-md text-on-surface font-medium truncate">
                           {!chat.isGroupChat ? getSender(user, chat.users) : chat.chatName}
                         </p>
-                        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="relative opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => e.stopPropagation()} 
                             className="p-1 rounded-full hover:bg-outline-variant/30 text-on-surface-variant group/menu focus:outline-none"
@@ -485,7 +555,8 @@ export default function ChatHome() {
                             <span className="material-symbols-outlined text-[18px]">more_vert</span>
                             <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[100] opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto">
                               <div onClick={(e) => handleArchiveChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-surface-container-low transition-colors text-on-surface cursor-pointer">
-                                <span className="material-symbols-outlined text-[16px]">archive</span> Archive
+                                <span className="material-symbols-outlined text-[16px]">{isChatArchivedForMe(chat) ? 'unarchive' : 'archive'}</span>
+                                {isChatArchivedForMe(chat) ? 'Unarchive' : 'Archive'}
                               </div>
                               {!chat.isGroupChat && (
                                 <>
@@ -529,6 +600,8 @@ export default function ChatHome() {
             user={user} 
             onBack={() => setSelectedChat(null)}
             onMessageSent={updateChatWithMessage}
+            onFriendRemoved={handleFriendRemoved}
+            onChatUpdate={updateChatInList}
           />
         </div>
       </div>

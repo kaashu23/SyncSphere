@@ -5,6 +5,8 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
 import VideoCallModal from './VideoCallModal';
+import GroupInfoModal from './GroupInfoModal';
+import GroupSettingsModal from './GroupSettingsModal';
 import EmojiPicker from 'emoji-picker-react';
 import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
@@ -15,7 +17,7 @@ let socket;
 
 const authenticator = async () => {
   try {
-    const response = await fetch("${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit");
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/imagekit`);
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -26,7 +28,7 @@ const authenticator = async () => {
   }
 };
 
-export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
+export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFriendRemoved, onChatUpdate }) {
   const { user } = useUser();
   const theme = useSelector((state) => state.theme.theme);
   const [messages, setMessages] = useState([]);
@@ -38,6 +40,9 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
   // Call States
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
+  const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
+  const [chatMenuOpen, setChatMenuOpen] = useState(false);
   
   // Audio Recording States
   const [audioState, setAudioState] = useState('idle'); // 'idle', 'recording', 'preview'
@@ -287,12 +292,28 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
     setRecordingTime(0);
   };
 
+  const isArchivedForMe = selectedChat?.archivedBy?.some(u => u.clerkId === user.id);
+
+  const groupAdminIds = (selectedChat?.admins || []).map(a => a?.clerkId || a?._id || a);
+  const isGroupCreator = selectedChat?.groupAdmin?.clerkId === user.id || selectedChat?.groupAdmin === user.id;
+  const isCurrentUserGroupAdmin = isGroupCreator || groupAdminIds.includes(user.id);
+
   const handleArchiveChat = async () => {
     try {
       await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/archive`, {}, { headers: { 'clerk-id': user.id } });
-      toast.success('Chat archived');
+      toast.success(isArchivedForMe ? 'Chat unarchived' : 'Chat archived');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) { toast.error('Error archiving chat'); }
+  };
+
+  const handleOpenInfo = () => {
+    if (selectedChat.isGroupChat) {
+      setIsGroupInfoOpen(true);
+    }
+  };
+
+  const handleOpenGroupSettings = () => {
+    setIsGroupSettingsOpen(true);
   };
 
   const handleMuteChat = async () => {
@@ -313,6 +334,8 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
       const config = { headers: { 'clerk-id': user.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${otherUser._id}`, {}, config);
       toast.success('Friend removed');
+      onFriendRemoved?.(otherUser._id);
+      onBack();
     } catch (err) { toast.error('Error removing friend'); }
   };
 
@@ -442,17 +465,17 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant shrink-0">
-            <button onClick={startCall} className="p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+            <button onClick={startCall} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
               <span className="material-symbols-outlined text-[20px]">call</span>
             </button>
-            <button onClick={startCall} className="p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+            <button onClick={startCall} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
               <span className="material-symbols-outlined text-[20px]">videocam</span>
             </button>
-            <button className="hidden sm:flex p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low mr-sm">
+            <button onClick={handleOpenInfo} className="hidden sm:flex w-9 h-9 items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
               <span className="material-symbols-outlined text-[20px]">info</span>
             </button>
-            <div className="w-px h-6 bg-outline-variant/50 mx-xs"></div>
-            <img alt="User" className="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all shrink-0" src={user?.imageUrl} />
+            <div className="w-px h-6 bg-outline-variant/50 mx-1 md:mx-xs"></div>
+            <img alt="User" className="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all shrink-0" src={user?.imageUrl || '/avatars/avatar_female_light.jpg'} />
           </div>
         </header>
 
@@ -460,7 +483,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
         <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
-              <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? '/logo.png' : selectedChat.users.find(u => u.clerkId !== user.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
+              <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
             </div>
             <div>
@@ -483,32 +506,43 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
           </div>
 
           <div className="relative">
-            <button 
+            <button
               id="chatMenuButton"
+              onClick={() => setChatMenuOpen((open) => !open)}
               className="p-xs text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container-low group focus:outline-none"
             >
               <span className="material-symbols-outlined">more_vert</span>
             </button>
-            <div className="absolute right-0 mt-2 w-48 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-50 opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
-              <button onClick={handleArchiveChat} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
-                <span className="material-symbols-outlined text-[18px]">archive</span> Archive Chat
-              </button>
-              <button onClick={handleMuteChat} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
-                <span className="material-symbols-outlined text-[18px]">volume_off</span> Mute Notifications
-              </button>
-              {!selectedChat.isGroupChat && (
-                <>
-                  <div className="h-px w-full bg-outline-variant/30 my-1"></div>
-                  <button onClick={handleRemoveFriend} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
-                    <span className="material-symbols-outlined text-[18px]">person_remove</span> Remove Friend
+            {chatMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setChatMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-50">
+                  <button onClick={() => { handleArchiveChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">{isArchivedForMe ? 'unarchive' : 'archive'}</span> {isArchivedForMe ? 'Unarchive Chat' : 'Archive Chat'}
                   </button>
-                </>
-              )}
-              <div className="h-px w-full bg-outline-variant/30 my-1"></div>
-              <button onClick={handleDeleteChat} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
-                <span className="material-symbols-outlined text-[18px]">delete</span> Delete Chat
-              </button>
-            </div>
+                  <button onClick={() => { handleMuteChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">volume_off</span> Mute Notifications
+                  </button>
+                  {selectedChat.isGroupChat && isCurrentUserGroupAdmin && (
+                    <button onClick={() => { handleOpenGroupSettings(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                      <span className="material-symbols-outlined text-[18px]">settings</span> Group Settings
+                    </button>
+                  )}
+                  {!selectedChat.isGroupChat && (
+                    <>
+                      <div className="h-px w-full bg-outline-variant/30 my-1"></div>
+                      <button onClick={() => { handleRemoveFriend(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
+                        <span className="material-symbols-outlined text-[18px]">person_remove</span> Remove Friend
+                      </button>
+                    </>
+                  )}
+                  <div className="h-px w-full bg-outline-variant/30 my-1"></div>
+                  <button onClick={() => { handleDeleteChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
+                    <span className="material-symbols-outlined text-[18px]">delete</span> Delete Chat
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -834,6 +868,20 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
           targetUser={!selectedChat?.isGroupChat ? selectedChat?.users?.find(u => u.clerkId !== user.id) : null}
           incomingCall={incomingCallData}
           currentUser={user}
+        />
+
+        <GroupInfoModal
+          isOpen={isGroupInfoOpen}
+          onClose={() => setIsGroupInfoOpen(false)}
+          chat={selectedChat}
+          onChatUpdated={onChatUpdate}
+        />
+
+        <GroupSettingsModal
+          isOpen={isGroupSettingsOpen}
+          onClose={() => setIsGroupSettingsOpen(false)}
+          chat={selectedChat}
+          onChatUpdated={onChatUpdate}
         />
 
         <ConfirmModal 

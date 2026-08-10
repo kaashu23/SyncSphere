@@ -1,6 +1,51 @@
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 
+// Returns a fully populated chat for use after mutations
+async function getPopulatedChat(chatId) {
+  const chat = await Chat.findById(chatId)
+    .populate('users', '-password')
+    .populate('groupAdmin', '-password')
+    .populate('admins', '-password')
+    .populate('archivedBy', 'clerkId')
+    .populate('latestMessage');
+  return await User.populate(chat, {
+    path: 'latestMessage.sender',
+    select: 'displayName avatarUrl email',
+  });
+}
+
+// Is the given user an admin of the chat (creator always counts)?
+function isGroupAdmin(chat, user) {
+  if (!user) return false;
+  if (chat.groupAdmin && chat.groupAdmin.equals(user._id)) return true;
+  if (Array.isArray(chat.admins)) {
+    return chat.admins.some((a) => {
+      const id = a && a._id ? a._id : a;
+      return id && id.equals(user._id);
+    });
+  }
+  return false;
+}
+
+// Save the chat and notify every member's socket room that the group changed
+async function saveAndBroadcast(req, chat) {
+  await chat.save();
+  const fullChat = await getPopulatedChat(chat._id);
+  try {
+    const io = req.app.get('io');
+    if (io && fullChat.users) {
+      fullChat.users.forEach((u) => {
+        const room = u.clerkId || u._id;
+        if (room) io.to(room).emit('group updated', fullChat);
+      });
+    }
+  } catch (err) {
+    console.error('Error broadcasting group update:', err.message);
+  }
+  return fullChat;
+}
+
 // Fetch all chats for a user
 exports.fetchChats = async (req, res) => {
   try {
@@ -11,6 +56,7 @@ exports.fetchChats = async (req, res) => {
     const chats = await Chat.find({ users: { $elemMatch: { $eq: user._id } } })
       .populate('users', '-password')
       .populate('groupAdmin', '-password')
+      .populate('admins', '-password')
       .populate('archivedBy', 'clerkId')
       .populate('latestMessage')
       .sort({ updatedAt: -1 });
@@ -94,11 +140,10 @@ exports.createGroupChat = async (req, res) => {
       users: users,
       isGroupChat: true,
       groupAdmin: currentUser,
+      admins: [currentUser._id], // creator is admin automatically
     });
 
-    const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
-      .populate('users', '-password')
-      .populate('groupAdmin', '-password');
+    const fullGroupChat = await getPopulatedChat(groupChat._id);
 
     res.status(200).json(fullGroupChat);
   } catch (error) {
@@ -122,13 +167,14 @@ exports.archiveChat = async (req, res) => {
     const { chatId } = req.params;
     const clerkId = req.headers['clerk-id'];
     const user = await User.findOne({ clerkId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
 
-    const isArchived = chat.archivedBy.includes(user._id);
+    const isArchived = (chat.archivedBy || []).some((id) => id && id.toString() === user._id.toString());
     if (isArchived) {
-      chat.archivedBy.pull(user._id);
+      chat.archivedBy = chat.archivedBy.filter((id) => id && id.toString() !== user._id.toString());
     } else {
       chat.archivedBy.push(user._id);
     }
@@ -144,18 +190,169 @@ exports.muteChat = async (req, res) => {
     const { chatId } = req.params;
     const clerkId = req.headers['clerk-id'];
     const user = await User.findOne({ clerkId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const chat = await Chat.findById(chatId);
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
 
-    const isMuted = chat.mutedBy.includes(user._id);
+    const isMuted = (chat.mutedBy || []).some((id) => id && id.toString() === user._id.toString());
     if (isMuted) {
-      chat.mutedBy.pull(user._id);
+      chat.mutedBy = chat.mutedBy.filter((id) => id && id.toString() !== user._id.toString());
     } else {
       chat.mutedBy.push(user._id);
     }
     await chat.save();
     res.status(200).json(chat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Promote or demote a member to/from admin (toggle, WhatsApp style)
+exports.toggleGroupAdmin = async (req, res) => {
+  try {
+    const { chatId, userId } = req.params;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+    if (!chat.isGroupChat) return res.status(400).json({ message: 'Not a group chat' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    // Only admins can promote/demote
+    if (!isGroupAdmin(chat, currentUser)) {
+      return res.status(403).json({ message: 'Only admins can change group admins' });
+    }
+
+    const target = await User.findById(userId);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    if (!chat.users.some((id) => id.equals(target._id))) {
+      return res.status(400).json({ message: 'User is not a member of this group' });
+    }
+
+    // The creator can never be demoted
+    if (chat.groupAdmin && chat.groupAdmin.equals(target._id)) {
+      return res.status(400).json({ message: 'The group creator is always an admin' });
+    }
+
+    if ((chat.admins || []).some((id) => id.equals(target._id))) {
+      chat.admins = (chat.admins || []).filter((id) => !id.equals(target._id));
+    } else {
+      chat.admins.push(target._id);
+    }
+
+    const fullChat = await saveAndBroadcast(req, chat);
+    res.status(200).json(fullChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Add a member to the group
+exports.addToGroup = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { userId } = req.body;
+    const clerkId = req.headers['clerk-id'];
+
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+    if (!chat.isGroupChat) return res.status(400).json({ message: 'Not a group chat' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!isGroupAdmin(chat, currentUser)) {
+      return res.status(403).json({ message: 'Only admins can add members' });
+    }
+
+    const target = await User.findById(userId);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    if (chat.users.some((id) => id.equals(target._id))) {
+      return res.status(400).json({ message: 'User is already a member' });
+    }
+
+    chat.users.push(target._id);
+    const fullChat = await saveAndBroadcast(req, chat);
+    res.status(200).json(fullChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Remove a member from the group
+exports.removeFromGroup = async (req, res) => {
+  try {
+    const { chatId, userId } = req.params;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+    if (!chat.isGroupChat) return res.status(400).json({ message: 'Not a group chat' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!isGroupAdmin(chat, currentUser)) {
+      return res.status(403).json({ message: 'Only admins can remove members' });
+    }
+
+    const target = await User.findById(userId);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    if (chat.groupAdmin && chat.groupAdmin.equals(target._id)) {
+      return res.status(400).json({ message: 'The group creator cannot be removed' });
+    }
+
+    chat.users = chat.users.filter((id) => !id.equals(target._id));
+    chat.admins = (chat.admins || []).filter((id) => !id.equals(target._id));
+
+    // Delete the chat if it becomes empty
+    if (chat.users.length === 0) {
+      await Chat.findByIdAndDelete(chat._id);
+      return res.status(200).json({ message: 'Group deleted (no members left)' });
+    }
+
+    const fullChat = await saveAndBroadcast(req, chat);
+    res.status(200).json(fullChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update group name and/or profile picture (admin only)
+exports.updateGroupInfo = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { chatName, chatAvatar } = req.body;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+    if (!chat.isGroupChat) return res.status(400).json({ message: 'Not a group chat' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!isGroupAdmin(chat, currentUser)) {
+      return res.status(403).json({ message: 'Only admins can edit group info' });
+    }
+
+    if (chatName !== undefined) {
+      const trimmed = String(chatName).trim();
+      if (!trimmed) return res.status(400).json({ message: 'Group name cannot be empty' });
+      chat.chatName = trimmed;
+    }
+    if (chatAvatar !== undefined) chat.chatAvatar = chatAvatar;
+
+    const fullChat = await saveAndBroadcast(req, chat);
+    res.status(200).json(fullChat);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

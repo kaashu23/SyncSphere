@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Chat = require('../models/Chat');
+const Message = require('../models/Message');
 
 exports.onboardUser = async (req, res) => {
   const { clerkId, username, avatarUrl, email, displayName } = req.body;
@@ -177,6 +178,18 @@ exports.removeFriend = async (req, res) => {
 
     await currentUser.save();
     await friend.save();
+
+    // Remove the 1-on-1 chat between them so they can no longer message each other
+    const chat = await Chat.findOneAndDelete({
+      isGroupChat: false,
+      $and: [
+        { users: { $elemMatch: { $eq: currentUser._id } } },
+        { users: { $elemMatch: { $eq: friend._id } } },
+      ],
+    });
+    if (chat) {
+      await Message.deleteMany({ chat: chat._id });
+    }
 
     res.status(200).json({ message: 'Friend removed' });
   } catch (error) {
