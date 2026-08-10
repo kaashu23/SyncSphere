@@ -26,7 +26,7 @@ const authenticator = async () => {
   }
 };
 
-export default function ChatWindow({ selectedChat, onBack }) {
+export default function ChatWindow({ selectedChat, onBack, onMessageSent }) {
   const { user } = useUser();
   const theme = useSelector((state) => state.theme.theme);
   const [messages, setMessages] = useState([]);
@@ -173,6 +173,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
           const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, payload, config);
           socket.emit('new message', data);
           setMessages(prev => [...prev, data]);
+          onMessageSent?.(data);
           setReplyingToMessage(null);
         }
       } catch (error) {
@@ -214,6 +215,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
       
       socket.emit('new message', data);
       setMessages(prev => [...prev, data]);
+      onMessageSent?.(data);
       toast.success('File sent', { id: 'upload' });
     } catch (error) {
       console.error(error);
@@ -276,6 +278,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
       }, config);
       socket.emit('new message', data);
       setMessages(prev => [...prev, data]);
+      onMessageSent?.(data);
     } catch (error) {
       console.error(error);
       toast.error('Error sending audio message');
@@ -301,6 +304,16 @@ export default function ChatWindow({ selectedChat, onBack }) {
 
   const handleDeleteChat = () => {
     setShowDeleteConfirm(true);
+  };
+
+  const handleRemoveFriend = async () => {
+    const otherUser = selectedChat.users.find(u => u.clerkId !== user.id);
+    if (!otherUser) return;
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${otherUser._id}`, {}, config);
+      toast.success('Friend removed');
+    } catch (err) { toast.error('Error removing friend'); }
   };
 
   const handleDeleteMessage = async (messageId) => {
@@ -356,6 +369,7 @@ export default function ChatWindow({ selectedChat, onBack }) {
       
       if (chatId === selectedChat._id) {
         setMessages(prev => [...prev, data]);
+        onMessageSent?.(data);
       }
       
       toast.success('Message forwarded');
@@ -419,26 +433,26 @@ export default function ChatWindow({ selectedChat, onBack }) {
     <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
       <div className="flex-1 flex flex-col h-screen relative bg-background">
         {/* TopAppBar */}
-        <header className="flex justify-between items-center w-full px-4 md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
-          <div className="flex items-center gap-2 md:gap-lg flex-1">
+        <header className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
+          <div className="flex items-center gap-2 md:gap-lg flex-1 min-w-0">
             <span className="font-headline-md text-headline-md font-bold text-primary truncate md:overflow-visible">SyncSphere</span>
             <div className="relative w-full max-w-[240px] hidden md:block">
               <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
               <input className="w-full bg-surface-container-low border-none rounded-full py-xs pl-xl pr-sm font-body-sm text-body-sm focus:ring-1 focus:ring-primary focus:bg-surface transition-all placeholder:text-outline-variant text-on-surface" placeholder="Search..." type="text"/>
             </div>
           </div>
-          <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant">
-            <button onClick={startCall} className="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-              <span className="material-symbols-outlined">call</span>
+          <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant shrink-0">
+            <button onClick={startCall} className="p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+              <span className="material-symbols-outlined text-[20px]">call</span>
             </button>
-            <button onClick={startCall} className="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-              <span className="material-symbols-outlined">videocam</span>
+            <button onClick={startCall} className="p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+              <span className="material-symbols-outlined text-[20px]">videocam</span>
             </button>
-            <button className="p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low mr-sm">
-              <span className="material-symbols-outlined">info</span>
+            <button className="hidden sm:flex p-1 md:p-xs hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low mr-sm">
+              <span className="material-symbols-outlined text-[20px]">info</span>
             </button>
             <div className="w-px h-6 bg-outline-variant/50 mx-xs"></div>
-            <img alt="User" className="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all" src={user?.imageUrl} />
+            <img alt="User" className="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all shrink-0" src={user?.imageUrl} />
           </div>
         </header>
 
@@ -482,6 +496,14 @@ export default function ChatWindow({ selectedChat, onBack }) {
               <button onClick={handleMuteChat} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
                 <span className="material-symbols-outlined text-[18px]">volume_off</span> Mute Notifications
               </button>
+              {!selectedChat.isGroupChat && (
+                <>
+                  <div className="h-px w-full bg-outline-variant/30 my-1"></div>
+                  <button onClick={handleRemoveFriend} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
+                    <span className="material-symbols-outlined text-[18px]">person_remove</span> Remove Friend
+                  </button>
+                </>
+              )}
               <div className="h-px w-full bg-outline-variant/30 my-1"></div>
               <button onClick={handleDeleteChat} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
                 <span className="material-symbols-outlined text-[18px]">delete</span> Delete Chat

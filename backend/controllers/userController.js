@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Chat = require('../models/Chat');
 
 exports.onboardUser = async (req, res) => {
   const { clerkId, username, avatarUrl, email, displayName } = req.body;
@@ -21,7 +22,8 @@ exports.onboardUser = async (req, res) => {
         username, 
         avatarUrl,
         email: email || `${clerkId}@placeholder.com`, // Fallback if missing
-        displayName: displayName || username
+        displayName: displayName || username,
+        onboarded: true
       },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
@@ -80,6 +82,23 @@ exports.sendRequest = async (req, res) => {
     
     await target.save();
     await sender.save();
+
+    // Notify the recipient in real time so the request shows up without a refresh
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(target.clerkId).emit('friend-request-received', {
+          _id: sender._id,
+          displayName: sender.displayName,
+          avatarUrl: sender.avatarUrl,
+          email: sender.email,
+          username: sender.username,
+          status: sender.status,
+        });
+      }
+    } catch (socketErr) {
+      console.error('Error emitting friend-request-received:', socketErr);
+    }
     
     res.status(200).json({ message: 'Friend request sent' });
   } catch (error) {
@@ -105,8 +124,61 @@ exports.acceptRequest = async (req, res) => {
     
     await currentUser.save();
     await sender.save();
+
+    // Create a 1-on-1 chat immediately
+    const chatExists = await Chat.findOne({
+      isGroupChat: false,
+      $and: [
+        { users: { $elemMatch: { $eq: currentUser._id } } },
+        { users: { $elemMatch: { $eq: sender._id } } },
+      ],
+    });
+
+    if (!chatExists) {
+      await Chat.create({
+        chatName: 'sender',
+        isGroupChat: false,
+        users: [currentUser._id, sender._id],
+      });
+    }
+
+    // Notify the requester that their request was accepted (only when the current user is the one accepting)
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(sender.clerkId).emit('friend-accepted', {
+          userId: currentUser._id,
+          displayName: currentUser.displayName,
+          avatarUrl: currentUser.avatarUrl,
+        });
+      }
+    } catch (socketErr) {
+      console.error('Error emitting friend-accepted:', socketErr);
+    }
     
     res.status(200).json({ message: 'Request accepted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.removeFriend = async (req, res) => {
+  try {
+    const clerkId = req.headers['clerk-id'];
+    const friendId = req.params.id;
+
+    const currentUser = await User.findOne({ clerkId });
+    const friend = await User.findById(friendId);
+
+    if (!currentUser || !friend) return res.status(404).json({ message: 'User not found' });
+
+    currentUser.friends = currentUser.friends.filter(id => id.toString() !== friendId);
+    friend.friends = friend.friends.filter(id => id.toString() !== currentUser._id.toString());
+
+    await currentUser.save();
+    await friend.save();
+
+    res.status(200).json({ message: 'Friend removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

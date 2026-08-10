@@ -10,6 +10,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import StatusFeed from '../components/chat/StatusFeed';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import io from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ChatHome() {
@@ -23,6 +24,7 @@ export default function ChatHome() {
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [checkingOnboarded, setCheckingOnboarded] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [friendsData, setFriendsData] = useState({ friends: [], friendRequests: [], sentRequests: [] });
   
@@ -58,6 +60,62 @@ export default function ChatHome() {
       fetchChats();
       fetchFriends();
     }
+  }, [user]);
+
+  // Guard: redirect to onboarding if the user hasn't set up a profile yet
+  useEffect(() => {
+    if (!user) return;
+    const config = { headers: { 'clerk-id': user.id } };
+    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, config)
+      .then(({ data }) => {
+        if (!data.onboarded) {
+          navigate('/onboarding');
+        } else {
+          setCheckingOnboarded(false);
+        }
+      })
+      .catch(() => {
+        navigate('/onboarding');
+      });
+  }, [user, navigate]);
+
+  const updateChatWithMessage = (message) => {
+    const chatId = message.chat?._id || message.chat;
+    if (!chatId) return;
+    setChats(prev => {
+      const existing = prev.find(c => c._id === chatId);
+      const chatItem = existing
+        ? { ...existing, latestMessage: message }
+        : { ...(message.chat || {}), _id: chatId, latestMessage: message };
+      return [chatItem, ...prev.filter(c => c._id !== chatId)];
+    });
+  };
+
+  // Live socket: update the chat list when a message arrives
+  useEffect(() => {
+    if (!user) return;
+    const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const socket = io(ENDPOINT);
+    socket.emit('setup', { _id: user.id });
+
+    socket.on('message recieved', (newMessage) => {
+      updateChatWithMessage(newMessage);
+    });
+
+    socket.on('friend-request-received', (newRequest) => {
+      setFriendsData(prev => {
+        if (prev.friendRequests.some(r => r._id === newRequest._id)) return prev;
+        return { ...prev, friendRequests: [newRequest, ...prev.friendRequests] };
+      });
+      toast.success(`New friend request from ${newRequest.displayName || 'a user'}`);
+    });
+
+    socket.on('friend-accepted', () => {
+      fetchFriends();
+      fetchChats();
+    });
+
+    return () => socket.disconnect();
   }, [user]);
 
   const handleSearch = async (e) => {
@@ -106,7 +164,9 @@ export default function ChatHome() {
       const config = { headers: { 'clerk-id': user.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/accept/${userId}`, {}, config);
       toast.success('Request accepted');
-      fetchFriends();
+      await fetchFriends();
+      await accessChat(userId);
+      setActiveTab('Direct Messages');
     } catch (err) { toast.error('Error accepting request'); }
   };
 
@@ -125,6 +185,16 @@ export default function ChatHome() {
   };
   const getSenderPic = (loggedUser, users) => {
     return users[0]?.clerkId === loggedUser?.id ? users[1]?.avatarUrl : users[0]?.avatarUrl;
+  };
+
+  const handleRemoveFriend = async (friendId, e) => {
+    e.stopPropagation();
+    try {
+      const config = { headers: { 'clerk-id': user.id } };
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${friendId}`, {}, config);
+      toast.success('Friend removed');
+      fetchFriends();
+    } catch (err) { toast.error('Error removing friend'); }
   };
 
   const handleArchiveChat = async (chatId, e) => {
@@ -152,6 +222,14 @@ export default function ChatHome() {
     } catch (err) { toast.error('Error deleting chat'); }
     setDeleteChatId(null);
   };
+
+  if (checkingOnboarded) {
+    return (
+      <div className="h-screen w-full bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
@@ -328,26 +406,26 @@ export default function ChatHome() {
                       onClick={() => { if (isFriend) accessChat(u._id); }} 
                       className={`flex justify-between items-center p-3 rounded-lg transition-colors ${isFriend ? 'hover:bg-surface-container-low cursor-pointer' : 'bg-surface'}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
-                        <div>
-                          <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-body-md text-on-surface font-medium truncate">{u.displayName}</p>
                           <p className="font-body-sm text-on-surface-variant truncate">{u.username ? `@${u.username}` : u.email}</p>
                         </div>
                       </div>
                       
                       {isFriend ? (
-                        <button className="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors flex items-center justify-center">
+                        <button className="text-primary hover:bg-primary/10 p-1.5 rounded-full transition-colors flex items-center justify-center shrink-0">
                           <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
                         </button>
                       ) : isSent ? (
-                        <span className="font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">Pending</span>
+                        <span className="font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded-md shrink-0">Pending</span>
                       ) : isReceived ? (
-                        <button onClick={(e) => acceptFriendRequest(u._id, e)} className="bg-primary text-on-primary font-label-md px-3 py-1.5 rounded-lg hover:bg-primary-container transition-colors">
+                        <button onClick={(e) => acceptFriendRequest(u._id, e)} className="bg-primary text-on-primary font-label-md px-3 py-1.5 rounded-lg hover:bg-primary-container transition-colors shrink-0">
                           Accept
                         </button>
                       ) : (
-                        <button onClick={(e) => sendFriendRequest(u._id, e)} className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                        <button onClick={(e) => sendFriendRequest(u._id, e)} className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
                           <span className="material-symbols-outlined text-[16px]">person_add</span> Add
                         </button>
                       )}
@@ -365,14 +443,14 @@ export default function ChatHome() {
                       key={u._id} 
                       className="flex justify-between items-center p-3 rounded-lg bg-surface border border-outline-variant/30 mb-2"
                     >
-                      <div className="flex items-center gap-3">
-                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover" />
-                        <div>
-                          <p className="font-body-md text-on-surface font-medium">{u.displayName}</p>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <img src={u.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-body-md text-on-surface font-medium truncate">{u.displayName}</p>
                           <p className="font-body-sm text-on-surface-variant truncate">{u.email}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 shrink-0">
                         <button onClick={(e) => rejectFriendRequest(u._id, e)} className="p-1.5 text-on-surface-variant hover:bg-error-container hover:text-error rounded-full transition-colors flex items-center justify-center">
                           <span className="material-symbols-outlined text-[20px]">close</span>
                         </button>
@@ -405,10 +483,18 @@ export default function ChatHome() {
                             className="p-1 rounded-full hover:bg-outline-variant/30 text-on-surface-variant group/menu focus:outline-none"
                           >
                             <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                            <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[100] opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto">
+                            <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[100] opacity-0 pointer-events-none transition-opacity focus-within:opacity-100 focus-within:pointer-events-auto group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto">
                               <div onClick={(e) => handleArchiveChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-surface-container-low transition-colors text-on-surface cursor-pointer">
                                 <span className="material-symbols-outlined text-[16px]">archive</span> Archive
                               </div>
+                              {!chat.isGroupChat && (
+                                <>
+                                  <div className="h-px w-full bg-outline-variant/30"></div>
+                                  <div onClick={(e) => handleRemoveFriend(chat.users.find(u => u.clerkId !== user.id)?._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
+                                    <span className="material-symbols-outlined text-[16px]">person_remove</span> Remove Friend
+                                  </div>
+                                </>
+                              )}
                               <div className="h-px w-full bg-outline-variant/30"></div>
                               <div onClick={(e) => handleDeleteChat(chat._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
                                 <span className="material-symbols-outlined text-[16px]">delete</span> Delete
@@ -442,6 +528,7 @@ export default function ChatHome() {
             selectedChat={selectedChat} 
             user={user} 
             onBack={() => setSelectedChat(null)}
+            onMessageSent={updateChatWithMessage}
           />
         </div>
       </div>

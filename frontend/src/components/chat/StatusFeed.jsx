@@ -16,7 +16,8 @@ export default function StatusFeed() {
 
   const fetchStatuses = async () => {
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/status`);
+      const config = user ? { headers: { 'clerk-id': user.id } } : {};
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/status`, config);
       setGroupedStatuses(data);
     } catch (error) {
       console.error(error);

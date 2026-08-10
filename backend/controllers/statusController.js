@@ -3,7 +3,20 @@ const User = require('../models/User');
 
 exports.getStatuses = async (req, res) => {
   try {
-    const statuses = await Status.find({ expiresAt: { $gt: new Date() } })
+    const clerkId = req.headers['clerk-id'];
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(401).json({ message: 'Unauthorized' });
+
+    const friendIds = currentUser.friends.map(id => id.toString());
+
+    // Only show the current user's own statuses and statuses from friends
+    const statuses = await Status.find({
+      expiresAt: { $gt: new Date() },
+      $or: [
+        { user: currentUser._id },
+        { user: { $in: friendIds } },
+      ],
+    })
       .populate('user', 'displayName avatarUrl clerkId')
       .sort({ createdAt: -1 });
 

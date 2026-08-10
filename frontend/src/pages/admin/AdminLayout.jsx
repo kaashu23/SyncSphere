@@ -94,9 +94,9 @@ export default function AdminLayout() {
 
       {/* Main Area */}
       <main className="w-full md:ml-[260px] flex flex-col min-h-screen">
-        <header className="flex justify-between items-center w-full px-margin-desktop h-16 border-b border-outline-variant bg-surface sticky top-0 z-40">
-          <div className="flex items-center gap-md w-1/3">
-            <div className="relative w-full max-w-sm">
+        <header className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 border-b border-outline-variant bg-surface sticky top-0 z-40">
+          <div className="flex items-center gap-md">
+            <div className="relative w-full max-w-sm hidden lg:block">
               <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
               <input 
                 className="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-xs pl-xl pr-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/50" 
@@ -105,17 +105,61 @@ export default function AdminLayout() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-md">
+          <div className="flex items-center gap-xs md:gap-md">
             <button 
               onClick={() => navigate('/chat')}
-              className="px-4 py-2 rounded-full font-label-caps text-label-caps bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors">
+              className="px-3 md:px-4 py-2 rounded-full font-label-caps text-label-caps bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors whitespace-nowrap">
               Exit to Chat
             </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+            <button className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors shrink-0">
               <span className="material-symbols-outlined">notifications</span>
             </button>
           </div>
         </header>
+
+        {/* Mobile Nav */}
+        <nav className="md:hidden flex overflow-x-auto no-scrollbar gap-unit px-margin-mobile py-2 bg-surface border-b border-outline-variant/30">
+          <NavLink to="/admin" end className={navClass}>
+            {({ isActive }) => (
+              <>
+                <span className={iconClass({ isActive })}>dashboard</span>
+                <span className="font-body-md text-body-md">Overview</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/admin/workspaces" className={navClass}>
+            {({ isActive }) => (
+              <>
+                <span className={iconClass({ isActive })}>grid_view</span>
+                <span className="font-body-md text-body-md">Workspaces</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/admin/channels" className={navClass}>
+            {({ isActive }) => (
+              <>
+                <span className={iconClass({ isActive })}>tag</span>
+                <span className="font-body-md text-body-md">Channels</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/admin/events" className={navClass}>
+            {({ isActive }) => (
+              <>
+                <span className={iconClass({ isActive })}>calendar_today</span>
+                <span className="font-body-md text-body-md">Events</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/admin/settings" className={navClass}>
+            {({ isActive }) => (
+              <>
+                <span className={iconClass({ isActive })}>settings</span>
+                <span className="font-body-md text-body-md">Settings</span>
+              </>
+            )}
+          </NavLink>
+        </nav>
 
         <div className="flex-1 overflow-y-auto bg-background">
           <Outlet />

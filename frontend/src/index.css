@@ -67,6 +67,32 @@
   --font-body-md: Inter, sans-serif;
   --font-body-sm: Inter, sans-serif;
   --font-headline-md: Inter, sans-serif;
+
+  --text-display-lg: 57px;
+  --text-display-lg--line-height: 64px;
+  --text-headline-md: 28px;
+  --text-headline-md--line-height: 36px;
+  --text-title-lg: 22px;
+  --text-title-lg--line-height: 28px;
+  --text-title-md: 16px;
+  --text-title-md--line-height: 24px;
+  --text-title-sm: 14px;
+  --text-title-sm--line-height: 20px;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 16px;
+  --text-label-caps: 12px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.08em;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -6,6 +6,7 @@ const {
   sendRequest,
   acceptRequest,
   rejectRequest,
+  removeFriend,
   getFriends
 } = require('../controllers/userController');
 
@@ -19,6 +20,7 @@ router.get('/', searchUsers);
 router.post('/request/:id', sendRequest);
 router.post('/accept/:id', acceptRequest);
 router.post('/reject/:id', rejectRequest);
+router.post('/remove/:id', removeFriend);
 router.get('/friends', getFriends);
 
 module.exports = router;

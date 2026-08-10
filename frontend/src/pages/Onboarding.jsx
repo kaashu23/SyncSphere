@@ -52,9 +52,13 @@ export default function Onboarding() {
     const checkUser = async () => {
       if (!user) return;
       try {
-        await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, { headers: { 'clerk-id': user.id } });
-        // User exists, redirect immediately
-        navigate('/chat');
+        const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, { headers: { 'clerk-id': user.id } });
+        // User exists, check if onboarded
+        if (data.onboarded) {
+          navigate('/chat');
+        } else {
+          setIsChecking(false);
+        }
       } catch (err) {
         // User not found, stay and show form
         setIsChecking(false);
@@ -99,14 +103,14 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="h-screen w-full bg-background flex items-center justify-center font-body-md text-on-surface overflow-y-auto py-12">
-      <main className="w-full max-w-[480px] min-w-[320px] px-6 md:px-8 flex flex-col items-center">
+    <div className="h-screen w-full bg-background flex items-start justify-center font-body-md text-on-surface overflow-y-auto py-12">
+      <main className="w-full max-w-[480px] px-4 sm:px-6 md:px-8 flex flex-col items-center">
         <header className="text-center mb-xl w-full">
-          <h1 className="font-display-lg text-[32px] md:text-[40px] font-bold text-on-surface mb-sm tracking-tight">SyncSphere</h1>
+          <h1 className="font-display-lg text-[28px] sm:text-[32px] md:text-[40px] font-bold text-on-surface mb-sm tracking-tight">SyncSphere</h1>
           <p className="font-body-md text-body-md text-on-surface-variant">Set up your profile to continue.</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-6 bg-surface-container-lowest shadow-ambient rounded-xl p-8 md:p-10 border border-outline-variant/30">
+        <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-6 bg-surface-container-lowest shadow-ambient rounded-xl p-6 sm:p-8 md:p-10 border border-outline-variant/30">
           
           <div className="relative group cursor-pointer">
             <label htmlFor="avatar-upload" className="block relative w-32 h-32 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border-2 border-dashed border-outline-variant group-hover:border-primary transition-colors cursor-pointer">

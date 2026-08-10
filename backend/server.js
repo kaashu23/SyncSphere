@@ -24,6 +24,8 @@ const io = new Server(server, {
   },
 });
 
+app.set('io', io);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
