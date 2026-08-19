@@ -36,7 +36,7 @@ function App() {
   return (
     <ClerkProvider publishableKey={clerkPubKey}>
       <Router>
-        <div className="min-h-screen bg-background text-on-surface font-title-sm transition-colors duration-200">
+        <div className="min-h-screen w-full overflow-x-hidden bg-background text-on-surface font-title-sm transition-colors duration-200">
           <Toaster position="bottom-right" toastOptions={{ className: 'font-body-md text-on-surface bg-surface shadow-ambient border border-outline-variant/30' }} />
           <Routes>
             {/* Landing page doubles as the Login page */}

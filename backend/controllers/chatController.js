@@ -1,5 +1,6 @@
 const Chat = require('../models/Chat');
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 // Returns a fully populated chat for use after mutations
 async function getPopulatedChat(chatId) {
@@ -66,7 +67,18 @@ exports.fetchChats = async (req, res) => {
       select: 'displayName avatarUrl email',
     });
 
-    res.status(200).json(chatsWithLatestMessageSender);
+    const chatsObj = chatsWithLatestMessageSender.map(c => c.toObject());
+    
+    // Add unreadCount for each chat
+    for (let chat of chatsObj) {
+      chat.unreadCount = await Message.countDocuments({
+        chat: chat._id,
+        sender: { $ne: user._id },
+        'seenBy.user': { $ne: user._id }
+      });
+    }
+
+    res.status(200).json(chatsObj);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

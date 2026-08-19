@@ -97,15 +97,26 @@ export default function ChatHome() {
     if (!chatId) return;
     setChats(prev => {
       const existing = prev.find(c => c._id === chatId);
+      const isCurrentlyOpen = selectedChatRef.current && selectedChatRef.current._id === chatId;
+      const isFromMe = (message.sender?._id || message.sender?.clerkId) === user.id;
+
       if (existing) {
-        return [{ ...existing, latestMessage: message }, ...prev.filter(c => c._id !== chatId)];
+        let newUnreadCount = existing.unreadCount || 0;
+        if (!isCurrentlyOpen && !isFromMe) {
+          newUnreadCount += 1;
+        }
+        return [{ ...existing, latestMessage: message, unreadCount: newUnreadCount }, ...prev.filter(c => c._id !== chatId)];
       }
-      // Chat not in the list yet — only add it if the sender is still a friend
-      // (prevents a removed friend's stray message from re-adding the chat)
+      
       const senderId = message.sender?._id || message.sender?.clerkId;
       const isFriend = friendsDataRef.current.friends.some(f => f._id === senderId);
       if (!isFriend) return prev;
-      return [{ ...(message.chat || {}), _id: chatId, latestMessage: message }, ...prev];
+      
+      let newUnreadCount = 0;
+      if (!isCurrentlyOpen && !isFromMe) {
+        newUnreadCount += 1;
+      }
+      return [{ ...(message.chat || {}), _id: chatId, latestMessage: message, unreadCount: newUnreadCount }, ...prev];
     });
   };
 
@@ -551,16 +562,27 @@ export default function ChatHome() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     key={chat._id} 
-                    onClick={() => setSelectedChat(chat)} 
+                    onClick={() => {
+                      setSelectedChat(chat);
+                      if (chat.unreadCount > 0) {
+                        setChats(prev => prev.map(c => c._id === chat._id ? { ...c, unreadCount: 0 } : c));
+                      }
+                    }} 
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group relative ${selectedChat?._id === chat._id ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}
                   >
                     <img src={chat.isGroupChat ? (chat.chatAvatar || '/logo.png') : getSenderPic(user, chat.users) || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
                     <div className="flex-1 min-w-0 pr-6">
                       <div className="flex justify-between items-center w-full">
-                        <p className="font-body-md text-on-surface font-medium truncate">
+                        <p className={`font-body-md text-on-surface truncate ${chat.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
                           {!chat.isGroupChat ? getSender(user, chat.users) : chat.chatName}
                         </p>
-                        <div className="relative opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-2">
+                          {chat.unreadCount > 0 && (
+                            <span className="bg-primary text-on-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                              {chat.unreadCount}
+                            </span>
+                          )}
+                          <div className="relative opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => e.stopPropagation()} 
                             className="p-1 rounded-full hover:bg-outline-variant/30 text-on-surface-variant group/menu focus:outline-none"
