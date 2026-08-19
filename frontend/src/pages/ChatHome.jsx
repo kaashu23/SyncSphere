@@ -608,6 +608,7 @@ export default function ChatHome() {
                             </div>
                           </button>
                         </div>
+                        </div>
                       </div>
                       <p className="font-body-sm text-on-surface-variant truncate pr-2">
                         {chat.latestMessage ? (
