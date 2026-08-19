@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useUser } from '@clerk/clerk-react';
 import axios from 'axios';
-import io from 'socket.io-client';
+import socket from '../../sockets/socket';
 import toast from 'react-hot-toast';
 import VideoCallModal from './VideoCallModal';
 import GroupInfoModal from './GroupInfoModal';
@@ -11,9 +11,6 @@ import EmojiPicker from 'emoji-picker-react';
 import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const ENDPOINT = `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}`;
-let socket;
 
 const authenticator = async () => {
   try {
@@ -31,6 +28,7 @@ const authenticator = async () => {
 export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFriendRemoved, onChatUpdate }) {
   const { user } = useUser();
   const theme = useSelector((state) => state.theme.theme);
+  const presences = useSelector((state) => state.presence.presences);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
@@ -40,6 +38,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
   // Call States
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
+  const [callIsVideo, setCallIsVideo] = useState(true);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
@@ -55,11 +54,13 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    socket = io(ENDPOINT);
     if (user) {
-      socket.emit('setup', { _id: user.id });
+      if (!socket.connected) {
+        socket.connect();
+      }
+      socket.emit('join', { userId: user.id });
       socket.on('connected', () => setSocketConnected(true));
-      socket.on('message recieved', (newMessageRecieved) => {
+      socket.on('message:new', (newMessageRecieved) => {
         if (!selectedChat || selectedChat._id !== newMessageRecieved.chat._id) {
           // Could notify here
         } else {
@@ -67,30 +68,30 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
           // Mark as read immediately when active
           const config = { headers: { 'clerk-id': user.id } };
           axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config).then(() => {
-            socket.emit('mark read', { chatId: selectedChat._id, users: selectedChat.users });
+            socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user.id });
           });
         }
       });
 
-      socket.on('messages read', (chatId) => {
+      socket.on('message:seen', ({ chatId }) => {
         if (selectedChat && selectedChat._id === chatId) {
           setMessages(prev => prev.map(m => ({ ...m, seenBy: [{ user: 'dummy' }] })));
         }
       });
 
-      socket.on('message deleted', (messageId) => {
+      socket.on('message:deleted', ({ messageId }) => {
         setMessages(prev => prev.filter(m => m._id !== messageId));
       });
 
-      socket.on('message reacted', (updatedMessage) => {
+      socket.on('message:reaction', (updatedMessage) => {
         setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
       });
 
-      socket.on('message edited', (updatedMessage) => {
+      socket.on('message:updated', (updatedMessage) => {
         setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
       });
 
-      socket.on('message starred', (updatedMessage) => {
+      socket.on('message:star', (updatedMessage) => {
         setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
       });
 
@@ -108,11 +109,21 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
 
       socket.on("call-received", (data) => {
         setIncomingCallData(data);
+        setCallIsVideo(!!data.isVideo);
         setIsVideoCallOpen(true);
       });
     }
     return () => {
-      socket.disconnect();
+      socket.off('connected');
+      socket.off('message:new');
+      socket.off('message:seen');
+      socket.off('message:deleted');
+      socket.off('message:reaction');
+      socket.off('message:updated');
+      socket.off('message:star');
+      socket.off('typing:start');
+      socket.off('typing:stop');
+      socket.off('call-received');
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [user, selectedChat]);
@@ -137,7 +148,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       
       // Mark as read
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config);
-      socket.emit('mark read', { chatId: selectedChat._id, users: selectedChat.users });
+      socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user.id });
     } catch (error) {
       console.error(error);
     } finally {
@@ -164,7 +175,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
         
         if (editingMessage) {
           const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${editingMessage._id}`, { content: tempMessage }, config);
-          socket.emit('message edit', { message: data, users: selectedChat.users });
+          socket.emit('message:edit', { message: data, users: selectedChat.users });
           setMessages(prev => prev.map(m => m._id === data._id ? data : m));
           setEditingMessage(null);
         } else {
@@ -176,7 +187,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
             payload.replyTo = replyingToMessage._id;
           }
           const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, payload, config);
-          socket.emit('new message', data);
+          socket.emit('message:send', { message: data });
           setMessages(prev => [...prev, data]);
           onMessageSent?.(data);
           setReplyingToMessage(null);
@@ -218,7 +229,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
         chatId: selectedChat._id,
       }, config);
       
-      socket.emit('new message', data);
+      socket.emit('message:send', { message: data });
       setMessages(prev => [...prev, data]);
       onMessageSent?.(data);
       toast.success('File sent', { id: 'upload' });
@@ -281,7 +292,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
         content: uploadData.url,
         chatId: selectedChat._id,
       }, config);
-      socket.emit('new message', data);
+      socket.emit('message:send', { message: data });
       setMessages(prev => [...prev, data]);
       onMessageSent?.(data);
     } catch (error) {
@@ -344,7 +355,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       const config = { headers: { 'clerk-id': user.id } };
       await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}`, config);
       setMessages(prev => prev.filter(m => m._id !== messageId));
-      socket.emit('delete message', { messageId, users: selectedChat.users });
+      socket.emit('message:delete', { messageId, chatId: selectedChat._id, users: selectedChat.users, senderId: user.id });
       toast.success('Message deleted');
     } catch (err) {
       toast.error('Error deleting message');
@@ -357,7 +368,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       const config = { headers: { 'clerk-id': user.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/react`, { emoji }, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
-      socket.emit('message reaction', { message: data, users: selectedChat.users });
+      socket.emit('message:react', { message: data, users: selectedChat.users });
     } catch (error) {
       console.error(error);
       toast.error('Failed to add reaction');
@@ -369,7 +380,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       const config = { headers: { 'clerk-id': user.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/star`, {}, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
-      socket.emit('message star', { message: data, users: selectedChat.users });
+      socket.emit('message:star', { message: data, users: selectedChat.users });
     } catch (error) {
       console.error(error);
       toast.error('Failed to star message');
@@ -388,7 +399,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       };
       
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, payload, config);
-      socket.emit('new message', data);
+      socket.emit('message:send', { message: data });
       
       if (chatId === selectedChat._id) {
         setMessages(prev => [...prev, data]);
@@ -423,8 +434,10 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
     setShowDeleteConfirm(false);
   };
 
-  const startCall = () => {
+  const startCall = (isVideo = true) => {
+    if (selectedChat?.isGroupChat) return;
     setIncomingCallData(null);
+    setCallIsVideo(isVideo);
     setIsVideoCallOpen(true);
   };
 
@@ -465,12 +478,16 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant shrink-0">
-            <button onClick={startCall} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-              <span className="material-symbols-outlined text-[20px]">call</span>
-            </button>
-            <button onClick={startCall} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-              <span className="material-symbols-outlined text-[20px]">videocam</span>
-            </button>
+            {!selectedChat.isGroupChat && (
+              <>
+                <button onClick={() => startCall(false)} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+                  <span className="material-symbols-outlined text-[20px]">call</span>
+                </button>
+                <button onClick={() => startCall(true)} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
+                  <span className="material-symbols-outlined text-[20px]">videocam</span>
+                </button>
+              </>
+            )}
             <button onClick={handleOpenInfo} className="hidden sm:flex w-9 h-9 items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
               <span className="material-symbols-outlined text-[20px]">info</span>
             </button>
@@ -484,7 +501,9 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
           <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
               <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
+              {!selectedChat.isGroupChat && presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' && (
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -498,10 +517,21 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
                   {selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user.id)?.displayName || 'User'}
                 </h2>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
-                Active now
-              </p>
+              
+              {selectedChat.isGroupChat ? (
+                <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
+                  {selectedChat.users.length} members
+                </p>
+              ) : (
+                <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' ? 'bg-green-500' : 'bg-outline-variant'}`}></span>
+                  {presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' 
+                    ? 'Active now' 
+                    : presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.lastSeenAt 
+                      ? `Last seen ${new Date(presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.lastSeenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+                      : 'Offline'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -868,6 +898,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
           targetUser={!selectedChat?.isGroupChat ? selectedChat?.users?.find(u => u.clerkId !== user.id) : null}
           incomingCall={incomingCallData}
           currentUser={user}
+          isVideo={callIsVideo}
         />
 
         <GroupInfoModal

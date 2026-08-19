@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useUser, UserButton } from '@clerk/clerk-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../redux/themeSlice';
+import { updatePresence } from '../redux/presenceSlice';
 import { useNavigate } from 'react-router-dom';
 import ChatWindow from '../components/chat/ChatWindow';
 import SettingsModal from '../components/chat/SettingsModal';
@@ -10,7 +11,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import StatusFeed from '../components/chat/StatusFeed';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import io from 'socket.io-client';
+import socket from '../sockets/socket';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ChatHome() {
@@ -111,11 +112,13 @@ export default function ChatHome() {
   // Live socket: update the chat list when a message arrives
   useEffect(() => {
     if (!user) return;
-    const ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    const socket = io(ENDPOINT);
-    socket.emit('setup', { _id: user.id });
+    
+    if (!socket.connected) {
+      socket.connect();
+    }
+    socket.emit('join', { userId: user.id });
 
-    socket.on('message recieved', (newMessage) => {
+    socket.on('message:new', (newMessage) => {
       updateChatWithMessage(newMessage);
     });
 
@@ -141,8 +144,18 @@ export default function ChatHome() {
       }
     });
 
-    return () => socket.disconnect();
-  }, [user]);
+    socket.on('presence:update', (presenceData) => {
+      dispatch(updatePresence(presenceData));
+    });
+
+    return () => {
+      socket.off('message:new');
+      socket.off('friend-request-received');
+      socket.off('friend-accepted');
+      socket.off('group updated');
+      socket.off('presence:update');
+    };
+  }, [user, dispatch]);
 
   const handleSearch = async (e) => {
     setSearch(e.target.value);
