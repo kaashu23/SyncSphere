@@ -461,7 +461,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   }
 
   return (
-    <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
+    <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_dummy'} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/dummy'} authenticator={authenticator}>
       <div className="flex-1 flex flex-col h-full relative bg-background w-full max-w-full">
         {/* TopAppBar */}
         <header className="hidden md:flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
