@@ -45,7 +45,7 @@ export default function ChatHome() {
 
   const fetchChats = async () => {
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
       setChats(data);
       return data;
@@ -59,7 +59,7 @@ export default function ChatHome() {
 
   const fetchFriends = async () => {
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/friends`, config);
       setFriendsData(data);
     } catch (error) {
@@ -103,7 +103,7 @@ export default function ChatHome() {
   // Guard: redirect to onboarding if the user hasn't set up a profile yet
   useEffect(() => {
     if (!user) return;
-    const config = { headers: { 'clerk-id': user.id } };
+    const config = { headers: { 'clerk-id': user?.id } };
     axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, config)
       .then(({ data }) => {
         if (!data.onboarded) {
@@ -152,7 +152,7 @@ export default function ChatHome() {
     if (!socket.connected) {
       socket.connect();
     }
-    socket.emit('join', { userId: user.id });
+    socket.emit('join', { userId: user?.id });
 
     socket.on('message:new', (newMessage) => {
       updateChatWithMessage(newMessage);
@@ -201,7 +201,7 @@ export default function ChatHome() {
     }
     try {
       setLoading(true);
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users?search=${e.target.value}`, config);
       setLoading(false);
       setSearchResult(data);
@@ -212,7 +212,7 @@ export default function ChatHome() {
 
   const accessChat = async (userId) => {
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, { userId }, config);
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSelectedChat(data);
@@ -226,7 +226,7 @@ export default function ChatHome() {
   const sendFriendRequest = async (userId, e) => {
     e?.stopPropagation();
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/request/${userId}`, {}, config);
       toast.success('Friend request sent');
       fetchFriends();
@@ -236,7 +236,7 @@ export default function ChatHome() {
   const acceptFriendRequest = async (userId, e) => {
     e?.stopPropagation();
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/accept/${userId}`, {}, config);
       toast.success('Request accepted');
       await fetchFriends();
@@ -248,7 +248,7 @@ export default function ChatHome() {
   const rejectFriendRequest = async (userId, e) => {
     e?.stopPropagation();
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/reject/${userId}`, {}, config);
       toast.success('Request rejected');
       fetchFriends();
@@ -280,7 +280,7 @@ export default function ChatHome() {
   const handleRemoveFriend = async (friendId, e) => {
     e.stopPropagation();
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${friendId}`, {}, config);
       toast.success('Friend removed');
       fetchFriends();
@@ -292,14 +292,14 @@ export default function ChatHome() {
     e.stopPropagation();
     try {
       const chat = chats.find(c => c._id === chatId);
-      const wasArchived = chat?.archivedBy?.some(u => u.clerkId === user.id);
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/archive`, {}, { headers: { 'clerk-id': user.id } });
+      const wasArchived = chat?.archivedBy?.some(u => u.clerkId === user?.id);
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/archive`, {}, { headers: { 'clerk-id': user?.id } });
       // Update the list immediately so archived/unarchived state is reflected right away
       setChats(prev => prev.map(c => {
         if (c._id !== chatId) return c;
         const archivedBy = wasArchived
-          ? (c.archivedBy || []).filter(u => u.clerkId !== user.id)
-          : [{ _id: user.id, clerkId: user.id }, ...(c.archivedBy || [])];
+          ? (c.archivedBy || []).filter(u => u.clerkId !== user?.id)
+          : [{ _id: user?.id, clerkId: user?.id }, ...(c.archivedBy || [])];
         return { ...c, archivedBy };
       }));
       toast.success(wasArchived ? 'Chat unarchived' : 'Chat archived');
@@ -316,7 +316,7 @@ export default function ChatHome() {
   const confirmDelete = async () => {
     if(!deleteChatId) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${deleteChatId}`, { headers: { 'clerk-id': user.id } });
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${deleteChatId}`, { headers: { 'clerk-id': user?.id } });
       toast.success('Chat deleted');
       fetchChats();
       if(selectedChat?._id === deleteChatId) setSelectedChat(null);
@@ -607,7 +607,7 @@ export default function ChatHome() {
                               {!chat.isGroupChat && (
                                 <>
                                   <div className="h-px w-full bg-outline-variant/30"></div>
-                                  <div onClick={(e) => handleRemoveFriend(chat.users.find(u => u.clerkId !== user.id)?._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
+                                  <div onClick={(e) => handleRemoveFriend(chat.users.find(u => u.clerkId !== user?.id)?._id, e)} className="w-full flex items-center gap-2 text-left px-3 py-2 font-body-sm hover:bg-error-container hover:text-error transition-colors text-error cursor-pointer">
                                     <span className="material-symbols-outlined text-[16px]">person_remove</span> Remove Friend
                                   </div>
                                 </>
