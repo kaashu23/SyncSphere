@@ -469,7 +469,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
     <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
       <div className="flex-1 flex flex-col h-screen relative bg-background">
         {/* TopAppBar */}
-        <header className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
+        <header className="hidden md:flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop top-0 h-16 border-b border-outline-variant bg-surface shrink-0 z-10">
           <div className="flex items-center gap-2 md:gap-lg flex-1 min-w-0">
             <span className="font-headline-md text-headline-md font-bold text-primary truncate md:overflow-visible">SyncSphere</span>
             <div className="relative w-full max-w-[240px] hidden md:block">
@@ -478,19 +478,6 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant shrink-0">
-            {!selectedChat.isGroupChat && (
-              <>
-                <button onClick={() => startCall(false)} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-                  <span className="material-symbols-outlined text-[20px]">call</span>
-                </button>
-                <button onClick={() => startCall(true)} className="w-9 h-9 flex items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-                  <span className="material-symbols-outlined text-[20px]">videocam</span>
-                </button>
-              </>
-            )}
-            <button onClick={handleOpenInfo} className="hidden sm:flex w-9 h-9 items-center justify-center hover:text-primary transition-colors cursor-pointer active:opacity-70 rounded-full hover:bg-surface-container-low">
-              <span className="material-symbols-outlined text-[20px]">info</span>
-            </button>
             <div className="w-px h-6 bg-outline-variant/50 mx-1 md:mx-xs"></div>
             <img alt="User" className="w-8 h-8 rounded-full object-cover cursor-pointer active:opacity-70 ring-2 ring-transparent hover:ring-primary-fixed transition-all shrink-0" src={user?.imageUrl || '/avatars/avatar_female_light.jpg'} />
           </div>
@@ -535,15 +522,29 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
             </div>
           </div>
 
-          <div className="relative">
-            <button
-              id="chatMenuButton"
-              onClick={() => setChatMenuOpen((open) => !open)}
-              className="p-xs text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container-low group focus:outline-none"
-            >
-              <span className="material-symbols-outlined">more_vert</span>
+          <div className="flex items-center gap-2">
+            {!selectedChat.isGroupChat && (
+              <div className="flex items-center">
+                <button onClick={() => startCall(false)} className="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-container-low">
+                  <span className="material-symbols-outlined text-[20px]">call</span>
+                </button>
+                <button onClick={() => startCall(true)} className="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-container-low">
+                  <span className="material-symbols-outlined text-[20px]">videocam</span>
+                </button>
+              </div>
+            )}
+            <button onClick={handleOpenInfo} className="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-container-low">
+              <span className="material-symbols-outlined text-[20px]">info</span>
             </button>
-            {chatMenuOpen && (
+            <div className="relative">
+              <button
+                id="chatMenuButton"
+                onClick={() => setChatMenuOpen((open) => !open)}
+                className="w-9 h-9 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container-low flex items-center justify-center focus:outline-none"
+              >
+                <span className="material-symbols-outlined">more_vert</span>
+              </button>
+              {chatMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setChatMenuOpen(false)}></div>
                 <div className="absolute right-0 mt-2 w-48 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-50">
@@ -573,6 +574,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
 

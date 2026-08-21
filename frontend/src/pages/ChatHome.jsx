@@ -316,18 +316,10 @@ export default function ChatHome() {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative">
+    <div className="flex h-[100dvh] bg-background overflow-hidden relative">
       
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Side Navigation Bar */}
-      <aside className={`w-[260px] h-full bg-surface-lowest border-r border-outline-variant flex flex-col fixed left-0 top-0 z-50 transform transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden md:flex w-[260px] h-full bg-surface-lowest border-r border-outline-variant flex-col fixed left-0 top-0 z-50">
         {/* Header */}
         <div className="flex items-center gap-sm px-sm mb-lg">
           <img src="/logo.png" alt="SyncSphere Logo" className="w-11 h-11 rounded-full border-2 border-primary-fixed shadow-ambient object-cover" />
@@ -426,13 +418,7 @@ export default function ChatHome() {
         <section className={`w-full md:w-[360px] h-full border-r border-outline-variant bg-surface flex-col z-0 ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="px-lg pt-lg pb-sm flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <button 
-                className="md:hidden p-1 -ml-2 text-on-surface hover:bg-surface-container-low rounded-lg transition-colors flex items-center justify-center"
-                onClick={() => setIsMobileMenuOpen(true)}
-              >
-                <span className="material-symbols-outlined">menu</span>
-              </button>
-              <h2 className="font-title-sm text-title-sm text-on-surface font-semibold tracking-tight">
+              <h2 className="font-title-lg text-title-lg text-on-surface font-semibold tracking-tight">
                 {activeTab === 'Channels' ? 'Channels' : activeTab === 'Direct Messages' ? 'Messages' : activeTab}
               </h2>
             </div>
@@ -467,7 +453,7 @@ export default function ChatHome() {
           
           <StatusFeed />
 
-          <div className="flex-1 overflow-y-auto px-md pb-lg space-y-1 mt-2">
+          <div className="flex-1 overflow-y-auto px-md pb-[80px] md:pb-lg space-y-1 mt-2">
             <AnimatePresence>
               {initialLoading ? (
                 Array(6).fill(0).map((_, i) => (
@@ -630,7 +616,7 @@ export default function ChatHome() {
         </section>
 
         {/* Right Panel: Chat Window */}
-        <div className={`flex-1 h-full ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 h-[100dvh] md:h-full ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <ChatWindow 
             selectedChat={selectedChat} 
             user={user} 
@@ -641,6 +627,31 @@ export default function ChatHome() {
           />
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className={`md:hidden fixed bottom-0 w-full h-[64px] bg-surface-bright border-t border-outline-variant z-50 flex items-center justify-around px-2 shadow-2xl ${selectedChat ? 'hidden' : 'flex'}`}>
+        <button onClick={() => setActiveTab('Direct Messages')} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${activeTab === 'Direct Messages' ? 'text-primary' : 'text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-[24px]" style={activeTab === 'Direct Messages' ? { fontVariationSettings: "'FILL' 1" } : {}}>chat_bubble</span>
+          <span className="text-[10px] font-medium mt-1">Chats</span>
+        </button>
+        <button onClick={() => setActiveTab('Channels')} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${activeTab === 'Channels' ? 'text-primary' : 'text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-[24px]" style={activeTab === 'Channels' ? { fontVariationSettings: "'FILL' 1" } : {}}>tag</span>
+          <span className="text-[10px] font-medium mt-1">Channels</span>
+        </button>
+        <button onClick={() => setActiveTab('Workspaces')} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${activeTab === 'Workspaces' ? 'text-primary' : 'text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-[24px]" style={activeTab === 'Workspaces' ? { fontVariationSettings: "'FILL' 1" } : {}}>grid_view</span>
+          <span className="text-[10px] font-medium mt-1">Spaces</span>
+        </button>
+        <button onClick={() => setActiveTab('Requests')} className={`flex flex-col items-center justify-center w-16 h-full transition-colors relative ${activeTab === 'Requests' ? 'text-primary' : 'text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-[24px]" style={activeTab === 'Requests' ? { fontVariationSettings: "'FILL' 1" } : {}}>group_add</span>
+          <span className="text-[10px] font-medium mt-1">Requests</span>
+          {friendsData.friendRequests.length > 0 && <span className="absolute top-1 right-2 w-3 h-3 bg-error rounded-full border-2 border-surface-bright"></span>}
+        </button>
+        <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center w-16 h-full transition-colors text-on-surface-variant">
+          <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-6 h-6 -mb-1" } }} />
+          <span className="text-[10px] font-medium mt-1 pt-1">Profile</span>
+        </button>
+      </nav>
 
       <SettingsModal 
         isOpen={isSettingsOpen} 

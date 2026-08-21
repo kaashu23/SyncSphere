@@ -298,7 +298,7 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-5xl h-[80vh] bg-surface rounded-2xl overflow-hidden shadow-2xl border border-outline-variant/30 flex flex-col">
+      <div className="relative w-full h-[100dvh] md:max-w-5xl md:h-[80vh] bg-surface md:rounded-2xl overflow-hidden shadow-2xl md:border border-outline-variant/30 flex flex-col">
 
         {/* Header */}
         <div className="absolute top-0 w-full p-md flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
