@@ -13,7 +13,11 @@ const chatSchema = new mongoose.Schema(
     groupAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     mutedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    archivedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    archivedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    wallpaperBy: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      wallpaperUrl: { type: String, default: '' }
+    }]
   },
   { timestamps: true }
 );

@@ -10,6 +10,7 @@ import GroupSettingsModal from './GroupSettingsModal';
 import EmojiPicker from 'emoji-picker-react';
 import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
+import ChatWallpaperPicker from './ChatWallpaperPicker';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const authenticator = async () => {
@@ -38,6 +39,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
   // Call States
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
+  const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   
   // Audio Recording States
@@ -140,11 +142,16 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config);
       socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user.id });
     } catch (error) {
-      console.error(error);
+      toast.error('Failed to load messages');
     } finally {
       setInitialLoading(false);
+      setTimeout(() => scrollToBottom('auto'), 100);
     }
   };
+
+  const myUserId = selectedChat?.users?.find(u => u.clerkId === user.id)?._id;
+  const myWallpaperObj = selectedChat?.wallpaperBy?.find(w => w.user === myUserId || w.user?._id === myUserId);
+  const wallpaperUrl = myWallpaperObj?.wallpaperUrl || '';
 
   useEffect(() => {
     fetchMessages();
@@ -543,6 +550,9 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
                   <button onClick={() => { handleMuteChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
                     <span className="material-symbols-outlined text-[18px]">volume_off</span> Mute Notifications
                   </button>
+                  <button onClick={() => { setIsWallpaperPickerOpen(true); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">wallpaper</span> Change Wallpaper
+                  </button>
                   {selectedChat.isGroupChat && isCurrentUserGroupAdmin && (
                     <button onClick={() => { handleOpenGroupSettings(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
                       <span className="material-symbols-outlined text-[18px]">settings</span> Group Settings
@@ -568,8 +578,12 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
         </div>
 
         {/* Chat Canvas */}
-        <main className="flex-1 overflow-y-auto bg-background flex flex-col items-center relative">
-          <div className="w-full max-w-[900px] flex-1 px-4 md:px-margin-desktop py-lg flex flex-col gap-sm justify-end pb-xl">
+        <main 
+          className={`flex-1 overflow-y-auto flex flex-col items-center relative ${wallpaperUrl ? 'bg-cover bg-center' : 'bg-background'}`}
+          style={wallpaperUrl ? { backgroundImage: `url(${wallpaperUrl})` } : {}}
+        >
+          {wallpaperUrl && <div className="absolute inset-0 bg-black/40 z-0"></div>}
+          <div className="w-full max-w-[900px] flex-1 px-4 md:px-margin-desktop py-lg flex flex-col gap-sm justify-end pb-xl z-10 relative">
             <div className="flex items-center justify-center gap-md my-sm">
               <div className="h-px bg-outline-variant/30 flex-1"></div>
               <span className="font-label-caps text-label-caps text-outline px-sm py-xs bg-surface-container-lowest rounded-full border border-outline-variant/20 shadow-ambient">TODAY</span>
@@ -900,6 +914,15 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
           title="Delete Chat"
           message="Are you sure you want to permanently delete this chat? This action cannot be undone."
         />
+        
+        {isWallpaperPickerOpen && (
+          <ChatWallpaperPicker 
+            chatId={selectedChat._id}
+            currentUser={user}
+            onClose={() => setIsWallpaperPickerOpen(false)}
+            onUpdate={onChatUpdate}
+          />
+        )}
       </div>
     </IKContext>
   );

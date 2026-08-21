@@ -197,6 +197,33 @@ exports.archiveChat = async (req, res) => {
   }
 };
 
+exports.setWallpaper = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { wallpaperUrl } = req.body;
+    const clerkId = req.headers['clerk-id'];
+    const user = await User.findOne({ clerkId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+    // Remove existing wallpaper setting for this user
+    chat.wallpaperBy = chat.wallpaperBy.filter(entry => entry.user.toString() !== user._id.toString());
+    
+    // Add new wallpaper setting if provided
+    if (wallpaperUrl) {
+      chat.wallpaperBy.push({ user: user._id, wallpaperUrl });
+    }
+    
+    await chat.save();
+    const updatedChat = await getPopulatedChat(chat._id);
+    res.status(200).json(updatedChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.muteChat = async (req, res) => {
   try {
     const { chatId } = req.params;
