@@ -18,6 +18,7 @@ function formatDuration(sec) {
 export default function VideoCallModal({ isOpen, onClose, socket, targetUser, incomingCall, currentUser, isVideo }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const durationTimerRef = useRef(null);
@@ -69,8 +70,12 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
 
         // Listen for remote tracks
         peerConnectionRef.current.ontrack = (event) => {
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
+          if (event.streams && event.streams[0]) {
+            if (isVideoCall && remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = event.streams[0];
+            } else if (!isVideoCall && remoteAudioRef.current) {
+              remoteAudioRef.current.srcObject = event.streams[0];
+            }
           }
         };
 
@@ -308,14 +313,22 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
 
         {/* Video Canvas */}
         <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
-          {callStatus === 'connected' && isVideoCall ? (
+          
+          {/* Always render audio for voice calls so it can receive the stream immediately */}
+          {!isVideoCall && <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />}
+
+          {/* Always render video for video calls to catch early streams, but hide if not connected */}
+          {isVideoCall && (
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${callStatus === 'connected' ? 'block' : 'hidden'}`}
             />
-          ) : (
+          )}
+
+          {/* Fallback UI when not connected or doing voice call */}
+          {(!isVideoCall || callStatus !== 'connected') && (
             <div className="flex flex-col items-center">
               <div className="w-32 h-32 rounded-full border-4 border-primary/30 flex items-center justify-center mb-md overflow-hidden">
                 {incomingCall ? (
