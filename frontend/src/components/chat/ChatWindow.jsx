@@ -134,7 +134,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       setInitialLoading(true);
       const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${selectedChat._id}`, config);
-      setMessages(data);
+      setMessages(Array.isArray(data) ? data : []);
       socket.emit('join chat', selectedChat._id);
       
       // Mark as read

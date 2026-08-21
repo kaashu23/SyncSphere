@@ -12,6 +12,7 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "imagekitio-react": "^4.3.0",
+    "puppeteer": "^25.8.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hot-toast": "^2.6.0",

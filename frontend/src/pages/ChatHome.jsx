@@ -47,7 +47,7 @@ export default function ChatHome() {
     try {
       const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
-      setChats(data);
+      setChats(Array.isArray(data) ? data : []);
       return data;
     } catch (error) {
       console.error('Error fetching chats', error);
@@ -61,7 +61,7 @@ export default function ChatHome() {
     try {
       const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/friends`, config);
-      setFriendsData(data);
+      setFriendsData(data && Array.isArray(data.friends) ? data : { friends: [], friendRequests: [], sentRequests: [] });
     } catch (error) {
       console.error('Error fetching friends', error);
     }
@@ -324,13 +324,14 @@ export default function ChatHome() {
     setDeleteChatId(null);
   };
 
-  const isChatArchivedForMe = (c) => c.archivedBy?.some(u => u.clerkId === user?.id);
-  const archivedChats = chats.filter(c => isChatArchivedForMe(c));
-  const visibleChats = chats.filter(c => {
+  const isChatArchivedForMe = (c) => c?.archivedBy?.some(u => u.clerkId === user?.id);
+
+  const archivedChats = Array.isArray(chats) ? chats.filter(c => isChatArchivedForMe(c)) : [];
+  const visibleChats = Array.isArray(chats) ? chats.filter(c => {
     if (activeTab === 'Archived') return isChatArchivedForMe(c);
     const matchesType = activeTab === 'Channels' ? c.isGroupChat : !c.isGroupChat;
     return matchesType && !isChatArchivedForMe(c);
-  });
+  }) : [];
 
   if (checkingOnboarded) {
     return (
@@ -392,7 +393,7 @@ export default function ChatHome() {
           >
             <span className="material-symbols-outlined font-light text-[24px]">group_add</span>
             <span className="font-body-md text-body-md flex-1">Requests</span>
-            {friendsData.friendRequests.length > 0 && (
+            {friendsData?.friendRequests?.length > 0 && (
               <span className="bg-error text-on-error text-[10px] font-bold px-1.5 py-0.5 rounded-full">{friendsData.friendRequests.length}</span>
             )}
           </button>
@@ -497,10 +498,11 @@ export default function ChatHome() {
                   </motion.div>
                 ))
               ) : searchResult.length > 0 ? (
-                searchResult.map((u, i) => {
-                  const isFriend = friendsData.friends.some(f => f._id === u._id);
-                  const isSent = friendsData.sentRequests.some(r => r._id === u._id);
-                  const isReceived = friendsData.friendRequests.some(r => r._id === u._id);
+                <>
+                {Array.isArray(searchResult) && searchResult.map((u, i) => {
+                  const isFriend = friendsData?.friends?.some(f => f._id === u._id);
+                  const isSent = friendsData?.sentRequests?.some(r => r._id === u._id);
+                  const isReceived = friendsData?.friendRequests?.some(r => r._id === u._id);
 
                   return (
                     <motion.div 
@@ -536,11 +538,16 @@ export default function ChatHome() {
                       )}
                     </motion.div>
                   );
-                })
+                })}
+                </>
               ) : activeTab === 'Requests' ? (
-                <>
-                  {friendsData.friendRequests.length === 0 && <p className="text-on-surface-variant text-center font-body-sm mt-4">No pending requests</p>}
-                  {friendsData.friendRequests.map((u, i) => (
+                <div className="flex flex-col">
+                {(!friendsData?.friendRequests || friendsData.friendRequests.length === 0) ? (
+                  <div className="flex-1 flex items-center justify-center p-4">
+                    <p className="text-on-surface-variant font-body-sm text-center">No pending requests.</p>
+                  </div>
+                ) : (
+                  friendsData.friendRequests.map((u, i) => (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -564,8 +571,9 @@ export default function ChatHome() {
                         </button>
                       </div>
                     </motion.div>
-                  ))}
-                </>
+                  ))
+                )}
+                </div>
               ) : visibleChats.length > 0 ? (
                 visibleChats.map((chat, i) => (
                   <motion.div 
