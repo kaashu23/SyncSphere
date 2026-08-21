@@ -502,7 +502,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
               
               {selectedChat.isGroupChat ? (
                 <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
-                  {selectedChat.users.length} members
+                  {selectedChat?.users?.length || 0} members
                 </p>
               ) : (
                 <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">

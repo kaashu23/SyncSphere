@@ -204,7 +204,7 @@ export default function ChatHome() {
       const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users?search=${e.target.value}`, config);
       setLoading(false);
-      setSearchResult(data);
+      setSearchResult(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching users', error);
     }
@@ -679,7 +679,7 @@ export default function ChatHome() {
         <button onClick={() => setActiveTab('Requests')} className={`flex flex-col items-center justify-center w-16 h-full transition-colors relative ${activeTab === 'Requests' ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-[24px]" style={activeTab === 'Requests' ? { fontVariationSettings: "'FILL' 1" } : {}}>group_add</span>
           <span className="text-[10px] font-medium mt-1">Requests</span>
-          {friendsData.friendRequests.length > 0 && <span className="absolute top-1 right-2 w-3 h-3 bg-error rounded-full border-2 border-surface-bright"></span>}
+          {friendsData?.friendRequests?.length > 0 && <span className="absolute top-1 right-2 w-3 h-3 bg-error rounded-full border-2 border-surface-bright"></span>}
         </button>
         <button onClick={() => setIsSettingsOpen(true)} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${isSettingsOpen ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-[24px]" style={isSettingsOpen ? { fontVariationSettings: "'FILL' 1" } : {}}>settings</span>

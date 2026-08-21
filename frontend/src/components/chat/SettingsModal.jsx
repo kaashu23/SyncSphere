@@ -50,8 +50,8 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }) {
 
   return (
     <IKContext 
-      publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} 
-      urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} 
+      publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_dummy'} 
+      urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/dummy'} 
       authenticator={authenticator}
     >
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">

@@ -143,7 +143,7 @@ export default function GroupSettingsModal({ isOpen, onClose, chat, onChatUpdate
 
   return (
     <>
-      <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT} authenticator={authenticator}>
+      <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_dummy'} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/dummy'} authenticator={authenticator}>
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-surface w-full max-w-[420px] max-h-[85vh] rounded-2xl shadow-2xl border border-outline-variant/30 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-md py-sm border-b border-outline-variant/30 shrink-0">
