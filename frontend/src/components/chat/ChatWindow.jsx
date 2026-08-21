@@ -107,7 +107,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
         }
       });
 
-      socket.on("call-received", (data) => {
+      socket.on("call:offer", (data) => {
         setIncomingCallData(data);
         setCallIsVideo(!!data.isVideo);
         setIsVideoCallOpen(true);
@@ -123,7 +123,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       socket.off('message:star');
       socket.off('typing:start');
       socket.off('typing:stop');
-      socket.off('call-received');
+      socket.off('call:offer');
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [user, selectedChat]);

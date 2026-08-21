@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -21,10 +22,10 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
   const localStreamRef = useRef(null);
   const durationTimerRef = useRef(null);
 
-  // 'idle', 'calling', 'ringing', 'connected', 'ended'
   const [callStatus, setCallStatus] = useState(incomingCall ? 'ringing' : 'idle');
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
   const isVideoCall = incomingCall ? !!incomingCall.isVideo : !!isVideo;
@@ -76,9 +77,10 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
         // Listen for ICE candidates
         peerConnectionRef.current.onicecandidate = (event) => {
           if (event.candidate && remoteUserId) {
-            socket.emit('ice-candidate', {
+            socket.emit('call:ice-candidate', {
               to: remoteUserId,
-              candidate: event.candidate
+              candidate: event.candidate,
+              from: currentUser.id
             });
           }
         };
@@ -102,12 +104,14 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
           const offer = await peerConnectionRef.current.createOffer();
           await peerConnectionRef.current.setLocalDescription(offer);
 
-          socket.emit('call-user', {
+          socket.emit('call:invite', {
             userToCall: targetUser.clerkId,
             signalData: offer,
             from: currentUser.id,
             name: currentUser.fullName || currentUser.username || currentUser.primaryEmailAddress?.emailAddress?.split('@')[0],
-            isVideo: isVideoCall
+            isVideo: isVideoCall,
+            isGroup: false,
+            chatId: targetUser.chatId
           });
         } else if (incomingCall) {
           // Incoming Call (Waiting for user to click answer)
@@ -125,35 +129,34 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
     setupMediaAndConnection();
 
     // Socket Listeners
-    socket.on('call-accepted', async (signal) => {
+    socket.on('call:accepted', async (data) => {
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.signal));
       }
     });
 
-    socket.on('ice-candidate', async (candidate) => {
+    socket.on('call:ice-candidate', async (data) => {
       if (peerConnectionRef.current) {
         try {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (e) {
           console.error('Error adding received ice candidate', e);
         }
       }
     });
 
-    socket.on('call-ended', () => {
+    socket.on('call:ended', () => {
       toast('Call ended', { icon: isVideoCall ? '📹' : '📞' });
-      handleCleanup();
-      onClose();
+      handleEndCall(false); // don't emit again
     });
 
     return () => {
       isMounted = false;
       stopDurationTimer();
       handleCleanup();
-      socket.off('call-accepted');
-      socket.off('ice-candidate');
-      socket.off('call-ended');
+      socket.off('call:accepted');
+      socket.off('call:ice-candidate');
+      socket.off('call:ended');
     };
   }, [isOpen]);
 
@@ -178,18 +181,39 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
     const answer = await peerConnectionRef.current.createAnswer();
     await peerConnectionRef.current.setLocalDescription(answer);
 
-    socket.emit('answer-call', {
+    socket.emit('call:answer', {
       to: incomingCall.from,
-      signal: answer
+      signal: answer,
+      from: currentUser.id
     });
   };
 
-  const handleEndCall = () => {
-    if (remoteUserId) {
-      socket.emit('end-call', { to: remoteUserId });
+  const handleEndCall = async (emit = true) => {
+    if (emit && remoteUserId) {
+      socket.emit('call:end', { to: remoteUserId, from: currentUser.id });
     }
     stopDurationTimer();
     handleCleanup();
+    
+    // Create Call Log
+    try {
+      if (!incomingCall && targetUser?.chatId) {
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/calls`, {
+          type: isVideoCall ? 'video' : 'voice',
+          isGroup: false,
+          chat: targetUser.chatId,
+          participants: [targetUser._id],
+          status: callStatus === 'connected' ? 'answered' : (emit ? 'missed' : 'declined'),
+          durationSeconds: callDuration,
+          startedAt: new Date(Date.now() - callDuration * 1000)
+        }, {
+          headers: { 'clerk-id': currentUser.id }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to save call log', e);
+    }
+
     onClose();
   };
 
@@ -209,6 +233,49 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoOff(!videoTrack.enabled);
+      }
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (isScreenSharing) {
+      // Stop screen sharing and revert to camera
+      if (localStreamRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: !isMuted });
+        const videoTrack = stream.getVideoTracks()[0];
+        
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track.kind === 'video');
+        if (sender) sender.replaceTrack(videoTrack);
+        
+        localStreamRef.current.getVideoTracks().forEach(track => track.stop());
+        localStreamRef.current.removeTrack(localStreamRef.current.getVideoTracks()[0]);
+        localStreamRef.current.addTrack(videoTrack);
+        
+        if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+        setIsScreenSharing(false);
+      }
+    } else {
+      // Start screen sharing
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = stream.getVideoTracks()[0];
+        
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track.kind === 'video');
+        if (sender) sender.replaceTrack(screenTrack);
+        
+        localStreamRef.current.getVideoTracks().forEach(track => track.stop());
+        localStreamRef.current.removeTrack(localStreamRef.current.getVideoTracks()[0]);
+        localStreamRef.current.addTrack(screenTrack);
+        
+        if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+        setIsScreenSharing(true);
+        
+        // Listen for user stopping screen share via browser UI
+        screenTrack.onended = () => {
+          toggleScreenShare(); // revert
+        };
+      } catch (err) {
+        console.error("Error sharing screen", err);
       }
     }
   };
@@ -306,12 +373,21 @@ export default function VideoCallModal({ isOpen, onClose, socket, targetUser, in
           </button>
 
           {isVideoCall && (
-            <button
-              onClick={toggleVideo}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-ambient ${isVideoOff ? 'bg-error text-on-error' : 'bg-surface hover:bg-surface-container-high text-on-surface'}`}
-            >
-              <span className="material-symbols-outlined text-[24px]">{isVideoOff ? 'videocam_off' : 'videocam'}</span>
-            </button>
+            <>
+              <button
+                onClick={toggleVideo}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-ambient ${isVideoOff ? 'bg-error text-on-error' : 'bg-surface hover:bg-surface-container-high text-on-surface'}`}
+              >
+                <span className="material-symbols-outlined text-[24px]">{isVideoOff ? 'videocam_off' : 'videocam'}</span>
+              </button>
+              
+              <button
+                onClick={toggleScreenShare}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-ambient ${isScreenSharing ? 'bg-primary text-on-primary' : 'bg-surface hover:bg-surface-container-high text-on-surface'}`}
+              >
+                <span className="material-symbols-outlined text-[24px]">screen_share</span>
+              </button>
+            </>
           )}
         </div>
       </div>

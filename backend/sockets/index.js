@@ -1,5 +1,6 @@
 const presenceSocket = require('./presenceSocket');
 const chatSocket = require('./chatSocket');
+const callSocket = require('./callSocket');
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
@@ -8,5 +9,6 @@ module.exports = (io) => {
     // Initialize modules
     presenceSocket(socket, io);
     chatSocket(socket, io);
+    callSocket(socket, io);
   });
 };
