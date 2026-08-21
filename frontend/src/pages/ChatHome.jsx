@@ -123,7 +123,7 @@ export default function ChatHome() {
     setChats(prev => {
       const existing = prev.find(c => c._id === chatId);
       const isCurrentlyOpen = selectedChatRef.current && selectedChatRef.current._id === chatId;
-      const isFromMe = (message.sender?._id || message.sender?.clerkId) === user.id;
+      const isFromMe = (message.sender?._id || message.sender?.clerkId) === user?.id;
 
       if (existing) {
         let newUnreadCount = existing.unreadCount || 0;
@@ -324,7 +324,7 @@ export default function ChatHome() {
     setDeleteChatId(null);
   };
 
-  const isChatArchivedForMe = (c) => c.archivedBy?.some(u => u.clerkId === user.id);
+  const isChatArchivedForMe = (c) => c.archivedBy?.some(u => u.clerkId === user?.id);
   const archivedChats = chats.filter(c => isChatArchivedForMe(c));
   const visibleChats = chats.filter(c => {
     if (activeTab === 'Archived') return isChatArchivedForMe(c);

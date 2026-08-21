@@ -56,7 +56,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       if (!socket.connected) {
         socket.connect();
       }
-      socket.emit('join', { userId: user.id });
+      socket.emit('join', { userId: user?.id });
       socket.on('connected', () => setSocketConnected(true));
       socket.on('message:new', (newMessageRecieved) => {
         if (!selectedChat || selectedChat._id !== newMessageRecieved.chat._id) {
@@ -64,9 +64,9 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         } else {
           setMessages((messages) => [...messages, newMessageRecieved]);
           // Mark as read immediately when active
-          const config = { headers: { 'clerk-id': user.id } };
+          const config = { headers: { 'clerk-id': user?.id } };
           axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config).then(() => {
-            socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user.id });
+            socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user?.id });
           });
         }
       });
@@ -132,14 +132,14 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     if (!selectedChat) return;
     try {
       setInitialLoading(true);
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${selectedChat._id}`, config);
       setMessages(data);
       socket.emit('join chat', selectedChat._id);
       
       // Mark as read
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config);
-      socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user.id });
+      socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user?.id });
     } catch (error) {
       toast.error('Failed to load messages');
     } finally {
@@ -163,11 +163,11 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const sendMessage = async () => {
     if (newMessage.trim()) {
       try {
-        const config = { headers: { 'clerk-id': user.id } };
+        const config = { headers: { 'clerk-id': user?.id } };
         const tempMessage = newMessage;
         setNewMessage('');
         setShowEmojiPicker(false);
-        socket.emit('typing:stop', { chatId: selectedChat._id, userId: user.id, users: selectedChat.users });
+        socket.emit('typing:stop', { chatId: selectedChat._id, userId: user?.id, users: selectedChat.users });
         
         if (editingMessage) {
           const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${editingMessage._id}`, { content: tempMessage }, config);
@@ -198,10 +198,10 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     setNewMessage(e.target.value);
     
     // Typing indicator logic
-    socket.emit('typing:start', { chatId: selectedChat._id, userId: user.id, users: selectedChat.users });
+    socket.emit('typing:start', { chatId: selectedChat._id, userId: user?.id, users: selectedChat.users });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit('typing:stop', { chatId: selectedChat._id, userId: user.id, users: selectedChat.users });
+      socket.emit('typing:stop', { chatId: selectedChat._id, userId: user?.id, users: selectedChat.users });
     }, 2000);
   };
 
@@ -219,7 +219,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
@@ -283,7 +283,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       const { data: uploadData } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
@@ -299,15 +299,15 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     setRecordingTime(0);
   };
 
-  const isArchivedForMe = selectedChat?.archivedBy?.some(u => u.clerkId === user.id);
+  const isArchivedForMe = selectedChat?.archivedBy?.some(u => u.clerkId === user?.id);
 
   const groupAdminIds = (selectedChat?.admins || []).map(a => a?.clerkId || a?._id || a);
-  const isGroupCreator = selectedChat?.groupAdmin?.clerkId === user.id || selectedChat?.groupAdmin === user.id;
-  const isCurrentUserGroupAdmin = isGroupCreator || groupAdminIds.includes(user.id);
+  const isGroupCreator = selectedChat?.groupAdmin?.clerkId === user?.id || selectedChat?.groupAdmin === user?.id;
+  const isCurrentUserGroupAdmin = isGroupCreator || groupAdminIds.includes(user?.id);
 
   const handleArchiveChat = async () => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/archive`, {}, { headers: { 'clerk-id': user.id } });
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/archive`, {}, { headers: { 'clerk-id': user?.id } });
       toast.success(isArchivedForMe ? 'Chat unarchived' : 'Chat archived');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) { toast.error('Error archiving chat'); }
@@ -325,7 +325,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const handleMuteChat = async () => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/mute`, {}, { headers: { 'clerk-id': user.id } });
+      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/mute`, {}, { headers: { 'clerk-id': user?.id } });
       toast.success('Chat notifications muted');
     } catch (err) { toast.error('Error muting chat'); }
   };
@@ -335,10 +335,10 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   };
 
   const handleRemoveFriend = async () => {
-    const otherUser = selectedChat.users.find(u => u.clerkId !== user.id);
+    const otherUser = selectedChat.users.find(u => u.clerkId !== user?.id);
     if (!otherUser) return;
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/remove/${otherUser._id}`, {}, config);
       toast.success('Friend removed');
       onFriendRemoved?.(otherUser._id);
@@ -348,10 +348,10 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const handleDeleteMessage = async (messageId) => {
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}`, config);
       setMessages(prev => prev.filter(m => m._id !== messageId));
-      socket.emit('message:delete', { messageId, chatId: selectedChat._id, users: selectedChat.users, senderId: user.id });
+      socket.emit('message:delete', { messageId, chatId: selectedChat._id, users: selectedChat.users, senderId: user?.id });
       toast.success('Message deleted');
     } catch (err) {
       toast.error('Error deleting message');
@@ -361,7 +361,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const handleReactToMessage = async (messageId, emoji) => {
     try {
       setActiveReactionMessageId(null); // close picker immediately
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/react`, { emoji }, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
       socket.emit('message:react', { message: data, users: selectedChat.users });
@@ -373,7 +373,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const handleStarMessage = async (messageId) => {
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${messageId}/star`, {}, config);
       setMessages(prev => prev.map(m => m._id === data._id ? data : m));
       socket.emit('message:star', { message: data, users: selectedChat.users });
@@ -386,7 +386,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const handleForwardMessage = async (chatId) => {
     if (!forwardingMessage) return;
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const payload = {
         content: forwardingMessage.content,
         chatId: chatId,
@@ -413,7 +413,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const openForwardModal = async (message) => {
     setForwardingMessage(message);
     try {
-      const config = { headers: { 'clerk-id': user.id } };
+      const config = { headers: { 'clerk-id': user?.id } };
       const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats`, config);
       setChatsList(data);
     } catch (error) {
@@ -423,7 +423,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const confirmDeleteChat = async () => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}`, { headers: { 'clerk-id': user.id } });
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}`, { headers: { 'clerk-id': user?.id } });
       toast.success('Chat deleted');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) { toast.error('Error deleting chat'); }
@@ -432,7 +432,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const startCall = (isVideo) => {
     if (selectedChat.isGroupChat) return;
-    const targetUser = selectedChat?.users?.find(u => u.clerkId !== user.id);
+    const targetUser = selectedChat?.users?.find(u => u.clerkId !== user?.id);
     if (onStartCall) onStartCall(isVideo, targetUser);
   };
 
@@ -482,8 +482,8 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
-              <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
-              {!selectedChat.isGroupChat && presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' && (
+              <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user?.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
+              {!selectedChat.isGroupChat && presences[selectedChat.users.find(u => u.clerkId !== user?.id)?.clerkId]?.status === 'online' && (
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></span>
               )}
             </div>
@@ -496,7 +496,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                   <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <h2 className="font-title-sm text-title-sm text-on-surface font-semibold flex items-center gap-1">
-                  {selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user.id)?.displayName || 'User'}
+                  {selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user?.id)?.displayName || 'User'}
                 </h2>
               </div>
               
@@ -506,11 +506,11 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                 </p>
               ) : (
                 <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs ml-[36px] md:ml-0">
-                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' ? 'bg-green-500' : 'bg-outline-variant'}`}></span>
-                  {presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.status === 'online' 
+                  <span className={`w-1.5 h-1.5 rounded-full inline-block ${presences[selectedChat.users.find(u => u.clerkId !== user?.id)?.clerkId]?.status === 'online' ? 'bg-green-500' : 'bg-outline-variant'}`}></span>
+                  {presences[selectedChat.users.find(u => u.clerkId !== user?.id)?.clerkId]?.status === 'online' 
                     ? 'Active now' 
-                    : presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.lastSeenAt 
-                      ? `Last seen ${new Date(presences[selectedChat.users.find(u => u.clerkId !== user.id)?.clerkId]?.lastSeenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+                    : presences[selectedChat.users.find(u => u.clerkId !== user?.id)?.clerkId]?.lastSeenAt 
+                      ? `Last seen ${new Date(presences[selectedChat.users.find(u => u.clerkId !== user?.id)?.clerkId]?.lastSeenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
                       : 'Offline'}
                 </p>
               )}
@@ -598,7 +598,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                   </motion.div>
                 ))
               ) : messages.map((m, i) => {
-               const isMine = m.sender._id === user.id || m.sender.clerkId === user.id;
+               const isMine = m.sender._id === user?.id || m.sender.clerkId === user?.id;
                const isImage = m.type === 'image' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && (m.content.match(/\.(jpeg|jpg|gif|png)$/) != null || m.content.includes('tr:')));
                const isAudio = m.type === 'audio' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && m.content.match(/\.(webm|mp3|wav|ogg)$/) != null);
                const isFile = !isImage && !isAudio && m.content.startsWith('http') && m.content.includes('ik.imagekit.io');
@@ -609,7 +609,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                if (m.reactions && Array.isArray(m.reactions)) {
                  m.reactions.forEach(r => {
                    reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
-                   if (r.user === user.id || r.user?._id === user.id) {
+                   if (r.user === user?.id || r.user?._id === user?.id) {
                      userReactions[r.emoji] = true;
                    }
                  });
@@ -630,8 +630,8 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                      
                      {/* Hover Actions */}
                      <div className={`absolute top-0 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/80 backdrop-blur-md rounded-full shadow-sm border border-outline-variant/30 p-0.5`}>
-                       <button onClick={() => handleStarMessage(m._id)} className={`p-1.5 rounded-full hover:bg-surface-container-high transition-colors flex ${m.starredBy?.includes(user.id) ? 'text-yellow-500' : 'text-on-surface-variant hover:text-primary'}`} title="Star message">
-                         <span className="material-symbols-outlined text-[16px]" style={m.starredBy?.includes(user.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>star</span>
+                       <button onClick={() => handleStarMessage(m._id)} className={`p-1.5 rounded-full hover:bg-surface-container-high transition-colors flex ${m.starredBy?.includes(user?.id) ? 'text-yellow-500' : 'text-on-surface-variant hover:text-primary'}`} title="Star message">
+                         <span className="material-symbols-outlined text-[16px]" style={m.starredBy?.includes(user?.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>star</span>
                        </button>
                        <button onClick={() => setActiveReactionMessageId(m._id)} className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors flex" title="Add reaction">
                          <span className="material-symbols-outlined text-[16px]">add_reaction</span>
@@ -707,7 +707,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                        )}
                        
                        <div className={`flex items-center gap-1 mt-1 self-end ${isMine ? 'text-white/80' : 'text-on-surface-variant/80'}`}>
-                         {m.starredBy?.includes(user.id) && (
+                         {m.starredBy?.includes(user?.id) && (
                            <span className="material-symbols-outlined text-[12px] text-yellow-400 mr-0.5" style={{fontVariationSettings: "'FILL' 1"}}>star</span>
                          )}
                          {m.editedAt && (
@@ -877,7 +877,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                   <p className="text-center text-outline py-8">No chats found.</p>
                 ) : (
                   chatsList.map(chat => {
-                    const otherUser = chat.users.find(u => u.clerkId !== user.id);
+                    const otherUser = chat.users.find(u => u.clerkId !== user?.id);
                     return (
                       <button key={chat._id} onClick={() => handleForwardMessage(chat._id)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container transition-colors text-left mb-1">
                         <img src={otherUser?.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-10 h-10 rounded-full object-cover shrink-0" />
