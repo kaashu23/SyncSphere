@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, UserButton } from '@clerk/clerk-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { IKContext, IKUpload } from 'imagekitio-react';
@@ -61,9 +61,14 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }) {
               <span className="material-symbols-outlined">settings</span>
               Settings
             </h2>
-            <button onClick={onClose} className="text-on-surface-variant hover:text-error transition-colors">
-              <span className="material-symbols-outlined">close</span>
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="w-8 h-8 rounded-full border border-outline-variant overflow-hidden flex items-center justify-center shrink-0">
+                <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
+              </div>
+              <button onClick={onClose} className="text-on-surface-variant hover:text-error transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 items-center">

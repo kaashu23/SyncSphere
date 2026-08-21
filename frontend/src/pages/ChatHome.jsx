@@ -9,6 +9,7 @@ import SettingsModal from '../components/chat/SettingsModal';
 import CreateChannelModal from '../components/chat/CreateChannelModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import StatusFeed from '../components/chat/StatusFeed';
+import VideoCallModal from '../components/chat/VideoCallModal';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import socket from '../sockets/socket';
@@ -23,6 +24,12 @@ export default function ChatHome() {
   const [chats, setChats] = useState([]);
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState([]);
+  
+  // Global Call States
+  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState(null);
+  const [callIsVideo, setCallIsVideo] = useState(true);
+  const [targetUserForCall, setTargetUserForCall] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [checkingOnboarded, setCheckingOnboarded] = useState(true);
@@ -64,6 +71,17 @@ export default function ChatHome() {
     if (user) {
       fetchChats();
       fetchFriends();
+      
+      const handleCallOffer = (data) => {
+        setIncomingCallData(data);
+        setCallIsVideo(!!data.isVideo);
+        setIsVideoCallOpen(true);
+      };
+      
+      socket.on("call:offer", handleCallOffer);
+      return () => {
+        socket.off("call:offer", handleCallOffer);
+      };
     }
   }, [user]);
 
@@ -74,6 +92,13 @@ export default function ChatHome() {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  const handleStartCall = (isVideo, targetUser) => {
+    setTargetUserForCall(targetUser);
+    setCallIsVideo(isVideo);
+    setIncomingCallData(null);
+    setIsVideoCallOpen(true);
+  };
 
   // Guard: redirect to onboarding if the user hasn't set up a profile yet
   useEffect(() => {
@@ -616,7 +641,7 @@ export default function ChatHome() {
         </section>
 
         {/* Right Panel: Chat Window */}
-        <div className={`flex-1 h-[100dvh] md:h-full ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 md:h-full ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
           <ChatWindow 
             selectedChat={selectedChat} 
             user={user} 
@@ -624,6 +649,7 @@ export default function ChatHome() {
             onMessageSent={updateChatWithMessage}
             onFriendRemoved={handleFriendRemoved}
             onChatUpdate={updateChatInList}
+            onStartCall={handleStartCall}
           />
         </div>
       </div>
@@ -647,9 +673,9 @@ export default function ChatHome() {
           <span className="text-[10px] font-medium mt-1">Requests</span>
           {friendsData.friendRequests.length > 0 && <span className="absolute top-1 right-2 w-3 h-3 bg-error rounded-full border-2 border-surface-bright"></span>}
         </button>
-        <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center w-16 h-full transition-colors text-on-surface-variant">
-          <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-6 h-6 -mb-1" } }} />
-          <span className="text-[10px] font-medium mt-1 pt-1">Profile</span>
+        <button onClick={() => setIsSettingsOpen(true)} className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${isSettingsOpen ? 'text-primary' : 'text-on-surface-variant'}`}>
+          <span className="material-symbols-outlined text-[24px]" style={isSettingsOpen ? { fontVariationSettings: "'FILL' 1" } : {}}>settings</span>
+          <span className="text-[10px] font-medium mt-1">Profile</span>
         </button>
       </nav>
 
@@ -657,6 +683,22 @@ export default function ChatHome() {
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
         onUpdate={fetchChats} 
+      />
+      
+      <StatusFeed isOpen={isStatusFeedOpen} onClose={() => setIsStatusFeedOpen(false)} currentUser={user} />
+      
+      <VideoCallModal 
+        isOpen={isVideoCallOpen} 
+        onClose={() => {
+          setIsVideoCallOpen(false);
+          setIncomingCallData(null);
+          setTargetUserForCall(null);
+        }} 
+        socket={socket} 
+        targetUser={targetUserForCall}
+        incomingCall={incomingCallData}
+        currentUser={user}
+        isVideo={callIsVideo}
       />
       
       <CreateChannelModal 

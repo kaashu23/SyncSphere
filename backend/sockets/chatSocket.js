@@ -47,4 +47,22 @@ module.exports = (socket, io) => {
       io.to(targetRoom.toString()).emit('message:seen', { chatId, messageIds, userId });
     });
   });
+
+  socket.on('typing:start', ({ chatId, userId, users }) => {
+    if (!users) return;
+    users.forEach(user => {
+      if (user._id.toString() === userId.toString() || user.clerkId === userId) return;
+      const targetRoom = user.clerkId || user._id;
+      io.to(targetRoom.toString()).emit('typing:start', { chatId, userId });
+    });
+  });
+
+  socket.on('typing:stop', ({ chatId, userId, users }) => {
+    if (!users) return;
+    users.forEach(user => {
+      if (user._id.toString() === userId.toString() || user.clerkId === userId) return;
+      const targetRoom = user.clerkId || user._id;
+      io.to(targetRoom.toString()).emit('typing:stop', { chatId, userId });
+    });
+  });
 };

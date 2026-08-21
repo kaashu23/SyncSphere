@@ -36,9 +36,6 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Call States
-  const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
-  const [incomingCallData, setIncomingCallData] = useState(null);
-  const [callIsVideo, setCallIsVideo] = useState(true);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
@@ -106,12 +103,6 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
           setTypingUsers(prev => prev.filter(id => id !== userId));
         }
       });
-
-      socket.on("call:offer", (data) => {
-        setIncomingCallData(data);
-        setCallIsVideo(!!data.isVideo);
-        setIsVideoCallOpen(true);
-      });
     }
     return () => {
       socket.off('connected');
@@ -123,7 +114,6 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
       socket.off('message:star');
       socket.off('typing:start');
       socket.off('typing:stop');
-      socket.off('call:offer');
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [user, selectedChat]);
@@ -434,11 +424,10 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
     setShowDeleteConfirm(false);
   };
 
-  const startCall = (isVideo = true) => {
-    if (selectedChat?.isGroupChat) return;
-    setIncomingCallData(null);
-    setCallIsVideo(isVideo);
-    setIsVideoCallOpen(true);
+  const startCall = (isVideo) => {
+    if (selectedChat.isGroupChat) return;
+    const targetUser = selectedChat?.users?.find(u => u.clerkId !== user.id);
+    if (onStartCall) onStartCall(isVideo, targetUser);
   };
 
   const onEmojiClick = (emojiObject) => {
@@ -889,19 +878,6 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
             </div>
           </div>
         )}
-
-        <VideoCallModal 
-          isOpen={isVideoCallOpen} 
-          onClose={() => {
-            setIsVideoCallOpen(false);
-            setIncomingCallData(null);
-          }} 
-          socket={socket} 
-          targetUser={!selectedChat?.isGroupChat ? selectedChat?.users?.find(u => u.clerkId !== user.id) : null}
-          incomingCall={incomingCallData}
-          currentUser={user}
-          isVideo={callIsVideo}
-        />
 
         <GroupInfoModal
           isOpen={isGroupInfoOpen}
