@@ -26,8 +26,7 @@ const authenticator = async () => {
   }
 };
 
-export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFriendRemoved, onChatUpdate }) {
-  const { user } = useUser();
+export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, onFriendRemoved, onChatUpdate, onStartCall }) {
   const theme = useSelector((state) => state.theme.theme);
   const presences = useSelector((state) => state.presence.presences);
   const [messages, setMessages] = useState([]);
@@ -149,7 +148,7 @@ export default function ChatWindow({ selectedChat, onBack, onMessageSent, onFrie
     }
   };
 
-  const myUserId = selectedChat?.users?.find(u => u.clerkId === user.id)?._id;
+  const myUserId = selectedChat?.users?.find(u => u.clerkId === user?.id)?._id;
   const myWallpaperObj = selectedChat?.wallpaperBy?.find(w => w.user === myUserId || w.user?._id === myUserId);
   const wallpaperUrl = myWallpaperObj?.wallpaperUrl || '';
 

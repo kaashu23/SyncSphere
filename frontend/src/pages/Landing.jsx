@@ -33,12 +33,12 @@ export default function Landing() {
             NEXT-GEN COMMUNICATION
           </div>
           
-          <h1 className="font-display-lg text-5xl lg:text-6xl font-bold text-on-surface leading-tight mb-md tracking-tight">
+          <h1 className="w-full text-4xl sm:text-5xl lg:text-6xl font-bold text-on-surface leading-tight mb-6 tracking-tight">
             Work flows <br className="hidden lg:block"/>
             <span className="text-primary">in harmony.</span>
           </h1>
           
-          <p className="w-full md:w-[600px] max-w-full font-body-md text-body-md text-on-surface-variant mb-xl leading-relaxed">
+          <p className="w-full max-w-[500px] text-base sm:text-lg text-on-surface-variant mb-10 leading-relaxed px-4 lg:px-0">
             Experience real-time messaging, crystal-clear WebRTC calls, and a serene digital workspace designed to eliminate friction and elevate your team's focus.
           </p>
           
