@@ -128,7 +128,7 @@ export default function ChatHome() {
     setChats(prev => {
       const existing = prev.find(c => c._id === chatId);
       const isCurrentlyOpen = selectedChatRef.current && selectedChatRef.current._id === chatId;
-      const isFromMe = (message.sender?._id || message.sender?.clerkId) === user?.id;
+      const isFromMe = (message.sender?.clerkId === user?.id) || (message.sender?._id === user?.id);
 
       if (existing) {
         let newUnreadCount = existing.unreadCount || 0;
@@ -138,7 +138,7 @@ export default function ChatHome() {
         return [{ ...existing, latestMessage: message, unreadCount: newUnreadCount }, ...prev.filter(c => c._id !== chatId)];
       }
       
-      const senderId = message.sender?._id || message.sender?.clerkId;
+      const senderId = message.sender?._id;
       const isFriend = friendsDataRef.current.friends.some(f => f._id === senderId);
       if (!isFriend) return prev;
       
@@ -166,7 +166,7 @@ export default function ChatHome() {
     socket.on('message:new', (newMessage) => {
       updateChatWithMessage(newMessage);
 
-      const isFromMe = (newMessage.sender?._id || newMessage.sender?.clerkId) === user?.id;
+      const isFromMe = (newMessage.sender?.clerkId === user?.id) || (newMessage.sender?._id === user?.id);
       const isCurrentlyOpen = selectedChatRef.current && selectedChatRef.current._id === (newMessage.chat?._id || newMessage.chat);
       const chatObj = chatsRef.current?.find(c => c._id === (newMessage.chat?._id || newMessage.chat));
       const isMuted = chatObj?.mutedBy?.includes(user?.id);

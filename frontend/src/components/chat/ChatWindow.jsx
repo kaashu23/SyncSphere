@@ -58,6 +58,11 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
+  const selectedChatRef = useRef(selectedChat);
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
+
   useEffect(() => {
     if (user) {
       if (!socket.connected) {
@@ -66,20 +71,22 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       socket.emit('join', { userId: user?.id });
       socket.on('connected', () => setSocketConnected(true));
       socket.on('message:new', (newMessageRecieved) => {
-        if (!selectedChat || selectedChat._id !== newMessageRecieved.chat._id) {
+        const currentChat = selectedChatRef.current;
+        if (!currentChat || currentChat._id !== newMessageRecieved.chat._id) {
           // Could notify here
         } else {
           setMessages((messages) => [...messages, newMessageRecieved]);
           // Mark as read immediately when active
           const config = { headers: { 'clerk-id': user?.id } };
           axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/read`, { chatId: selectedChat._id }, config).then(() => {
-            socket.emit('message:seen', { chatId: selectedChat._id, users: selectedChat.users, userId: user?.id });
+            socket.emit('message:seen', { chatId: currentChat._id, users: currentChat.users, userId: user?.id });
           });
         }
       });
 
       socket.on('message:seen', ({ chatId }) => {
-        if (selectedChat && selectedChat._id === chatId) {
+        const currentChat = selectedChatRef.current;
+        if (currentChat && currentChat._id === chatId) {
           setMessages(prev => prev.map(m => ({ ...m, seenBy: [{ user: 'dummy' }] })));
         }
       });
@@ -93,7 +100,10 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       });
 
       socket.on('message:updated', (updatedMessage) => {
-        setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+        const currentChat = selectedChatRef.current;
+        if (currentChat && currentChat._id === updatedMessage.chat._id) {
+          setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+        }
       });
 
       socket.on('message:star', (updatedMessage) => {
