@@ -161,6 +161,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const wallpaperUrl = myWallpaperObj?.wallpaperUrl || '';
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileSearching, setIsMobileSearching] = useState(false);
 
   const filteredMessages = messages.filter(m => {
     if (!searchQuery) return true;
@@ -638,6 +639,9 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
           </div>
 
           <div className="flex items-center gap-2">
+            <button onClick={() => setIsMobileSearching(!isMobileSearching)} className="md:hidden w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-container-low">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
             {!selectedChat.isGroupChat && (
               <div className="flex items-center">
                 <button onClick={() => startCall(false)} className="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded-full hover:bg-surface-container-low">
@@ -708,6 +712,24 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
             </div>
           </div>
         </div>
+
+        {/* Mobile Search Bar Dropdown */}
+        {isMobileSearching && (
+          <div className="md:hidden absolute top-[72px] left-0 w-full bg-surface-bright border-b border-outline-variant/30 p-2 z-[90] shadow-md flex items-center gap-2 animate-in slide-in-from-top-2">
+            <span className="material-symbols-outlined text-on-surface-variant ml-2 text-[18px]">search</span>
+            <input 
+              autoFocus
+              type="text" 
+              placeholder="Search in chat..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-on-surface text-sm font-body-sm"
+            />
+            <button onClick={() => { setIsMobileSearching(false); setSearchQuery(''); }} className="p-1 hover:bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant">
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+        )}
 
         {/* Chat Canvas */}
         <main 

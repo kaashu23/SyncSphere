@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const AdminNotification = require('../models/AdminNotification');
+const AdminEvent = require('../models/AdminEvent');
+const GlobalSettings = require('../models/GlobalSettings');
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -103,4 +105,64 @@ const markNotificationsRead = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getAllChats, exportChat, getAllUsers, getNotifications, markNotificationsRead };
+const getEvents = async (req, res) => {
+  try {
+    const events = await AdminEvent.find().sort({ date: 1 });
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const createEvent = async (req, res) => {
+  try {
+    const { title, description, date } = req.body;
+    const newEvent = await AdminEvent.create({ title, description, date });
+    // Also create a global notification
+    await AdminNotification.create({
+      title: 'New Platform Event',
+      message: `${title}: ${description}`,
+      type: 'info'
+    });
+    res.status(201).json(newEvent);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteEvent = async (req, res) => {
+  try {
+    await AdminEvent.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getSettings = async (req, res) => {
+  try {
+    let settings = await GlobalSettings.findOne();
+    if (!settings) {
+      settings = await GlobalSettings.create({});
+    }
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const updateSettings = async (req, res) => {
+  try {
+    let settings = await GlobalSettings.findOne();
+    if (!settings) {
+      settings = new GlobalSettings();
+    }
+    Object.assign(settings, req.body);
+    await settings.save();
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getDashboardStats, getAllChats, exportChat, getAllUsers, getNotifications, markNotificationsRead, getEvents, createEvent, deleteEvent, getSettings, updateSettings };

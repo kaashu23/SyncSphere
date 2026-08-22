@@ -1,120 +1,137 @@
-import { useUser, useClerk } from '@clerk/clerk-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export default function Settings() {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const [settings, setSettings] = useState({
+    maintenanceMode: false,
+    allowRegistrations: true,
+    maxFileSizeMB: 20,
+    theme: 'system'
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchSettings = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+      const { data } = await axios.get(`${baseUrl}/api/admin/settings`);
+      setSettings(data);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+      const { data } = await axios.put(`${baseUrl}/api/admin/settings`, settings);
+      setSettings(data);
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-margin-mobile md:p-margin-desktop h-full flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-[720px] mx-auto w-full flex flex-col gap-lg pb-xl p-margin-mobile md:p-margin-desktop">
-      {/* Page Title */}
-      <div className="mb-sm">
-        <h2 className="font-display-lg text-display-lg text-on-background mb-xs">Settings</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant">Manage your account preferences and application behavior.</p>
-      </div>
-
-      {/* Profile Card */}
-      <section className="bg-surface-container-lowest rounded-xl p-lg shadow-[0_4px_20px_rgba(0,0,0,0.03),0_2px_8px_rgba(0,0,0,0.02)] border border-outline-variant/30 flex flex-col md:flex-row items-center md:items-start gap-lg relative overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-fixed/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        
-        <div className="relative shrink-0">
-          <img 
-            alt="Profile Avatar" 
-            className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-surface shadow-sm" 
-            src={user?.imageUrl || "https://ui-avatars.com/api/?name=Admin"}
-          />
-          <button className="absolute bottom-0 right-0 w-8 h-8 bg-surface-container-lowest rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
-          </button>
+    <div className="p-margin-mobile md:p-margin-desktop max-w-4xl mx-auto w-full flex flex-col gap-lg h-full">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-xs">
+          <h2 className="font-display-lg text-display-lg text-on-surface">Platform Settings</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant">Manage global application behavior.</p>
         </div>
-
-        <div className="flex-1 text-center md:text-left flex flex-col h-full justify-center">
-          <div className="flex items-center justify-center md:justify-start gap-sm mb-xs">
-            <h3 className="font-headline-md text-headline-md font-bold text-on-surface">{user?.fullName || 'Admin User'}</h3>
-            <span className="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed font-label-caps text-label-caps rounded-full">Pro</span>
-          </div>
-          <p className="font-body-md text-body-md text-on-surface-variant mb-md">{user?.primaryEmailAddress?.emailAddress}</p>
-          
-          <div className="flex flex-wrap gap-sm justify-center md:justify-start relative z-10">
-            <button className="px-4 py-2 bg-primary text-on-primary font-title-sm text-title-sm rounded-lg hover:bg-primary-container transition-colors cursor-pointer">Edit Profile</button>
-            <button className="px-4 py-2 bg-surface text-on-surface font-title-sm text-title-sm rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors cursor-pointer">View Public Profile</button>
-          </div>
-        </div>
-      </section>
-
-      {/* Settings List */}
-      <div className="flex flex-col gap-sm">
-        <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-xs ml-sm">Account Settings</h3>
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
-          
-          <button className="w-full flex items-center justify-between p-lg hover:bg-surface-container-low transition-colors border-b border-outline-variant/30 last:border-b-0 group cursor-pointer text-left">
-            <div className="flex items-center gap-md">
-              <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
-                <span className="material-symbols-outlined font-light">person</span>
-              </div>
-              <div>
-                <p className="font-title-sm text-title-sm text-on-surface">Personal Information</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Name, email, phone number</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
-          </button>
-
-          <button className="w-full flex items-center justify-between p-lg hover:bg-surface-container-low transition-colors border-b border-outline-variant/30 last:border-b-0 group cursor-pointer text-left">
-            <div className="flex items-center gap-md">
-              <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
-                <span className="material-symbols-outlined font-light">lock</span>
-              </div>
-              <div>
-                <p className="font-title-sm text-title-sm text-on-surface">Privacy & Security</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Password, 2FA, connected apps</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
-          </button>
-
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-sm mt-md">
-        <h3 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-xs ml-sm">Preferences</h3>
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
-          
-          <button className="w-full flex items-center justify-between p-lg hover:bg-surface-container-low transition-colors border-b border-outline-variant/30 last:border-b-0 group cursor-pointer text-left">
-            <div className="flex items-center gap-md">
-              <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
-                <span className="material-symbols-outlined font-light">notifications</span>
-              </div>
-              <div>
-                <p className="font-title-sm text-title-sm text-on-surface">Notifications</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Email, push, desktop sounds</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
-          </button>
-
-          <button className="w-full flex items-center justify-between p-lg hover:bg-surface-container-low transition-colors border-b border-outline-variant/30 last:border-b-0 group cursor-pointer text-left">
-            <div className="flex items-center gap-md">
-              <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:bg-primary-fixed group-hover:text-primary transition-colors">
-                <span className="material-symbols-outlined font-light">palette</span>
-              </div>
-              <div>
-                <p className="font-title-sm text-title-sm text-on-surface">Appearance</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Theme, sidebar colors, layout</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">chevron_right</span>
-          </button>
-
-        </div>
-      </div>
-
-      <div className="mt-xl flex justify-center">
-        <button 
-          onClick={() => signOut()}
-          className="px-6 py-3 font-title-sm text-title-sm text-error hover:bg-error-container/50 rounded-lg transition-colors flex items-center gap-sm cursor-pointer">
-          <span className="material-symbols-outlined text-[20px]">logout</span>
-          Sign Out
+        <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-primary text-on-primary rounded-full font-label-caps hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
+      </div>
+
+      <div className="flex flex-col gap-6 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-ambient p-6 md:p-8">
+        
+        {/* Maintenance Mode */}
+        <div className="flex items-center justify-between pb-6 border-b border-outline-variant/20">
+          <div className="flex flex-col gap-1 pr-4">
+            <h3 className="font-title-md text-on-surface">Maintenance Mode</h3>
+            <p className="font-body-sm text-on-surface-variant">Disable user access to the application for upgrades.</p>
+          </div>
+          <button 
+            onClick={() => setSettings({...settings, maintenanceMode: !settings.maintenanceMode})}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.maintenanceMode ? 'bg-error' : 'bg-surface-container-highest'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.maintenanceMode ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+
+        {/* Allow Registrations */}
+        <div className="flex items-center justify-between pb-6 border-b border-outline-variant/20">
+          <div className="flex flex-col gap-1 pr-4">
+            <h3 className="font-title-md text-on-surface">Allow New Registrations</h3>
+            <p className="font-body-sm text-on-surface-variant">Let new users sign up for the platform.</p>
+          </div>
+          <button 
+            onClick={() => setSettings({...settings, allowRegistrations: !settings.allowRegistrations})}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.allowRegistrations ? 'bg-primary' : 'bg-surface-container-highest'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.allowRegistrations ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+
+        {/* Max File Size */}
+        <div className="flex flex-col gap-4 pb-6 border-b border-outline-variant/20">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-title-md text-on-surface">Max Upload Size</h3>
+            <p className="font-body-sm text-on-surface-variant">Maximum file size (MB) users can upload.</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <input 
+              type="range" 
+              min="1" 
+              max="100" 
+              value={settings.maxFileSizeMB} 
+              onChange={e => setSettings({...settings, maxFileSizeMB: parseInt(e.target.value)})}
+              className="w-full max-w-xs accent-primary" 
+            />
+            <span className="font-title-md text-primary">{settings.maxFileSizeMB} MB</span>
+          </div>
+        </div>
+
+        {/* Default Theme */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-title-md text-on-surface">Default Theme</h3>
+            <p className="font-body-sm text-on-surface-variant">Set the default theme for new users.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {['light', 'dark', 'system'].map((theme) => (
+              <button 
+                key={theme}
+                onClick={() => setSettings({...settings, theme})}
+                className={`px-4 py-2 rounded-lg font-label-md capitalize border transition-colors ${settings.theme === theme ? 'bg-primary-container text-on-primary-container border-primary/30' : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'}`}
+              >
+                {theme}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
