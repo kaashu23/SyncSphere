@@ -50,6 +50,9 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const timerRef = useRef(null);
   
   const messagesEndRef = useRef(null);
+  const scrollToBottom = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
 
   useEffect(() => {
     if (user) {
@@ -157,7 +160,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   }, [selectedChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom('smooth');
   }, [messages]);
 
   const sendMessage = async () => {
@@ -479,7 +482,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         </header>
 
         {/* Active Chat Sub-Header */}
-        <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-0 shadow-sm relative">
+        <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-40 shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
               <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user?.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
