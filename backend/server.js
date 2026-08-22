@@ -53,7 +53,7 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/status', require('./routes/statusRoutes'));
 app.use('/api/calls', require('./routes/callRoutes'));
-
+app.use('/api/admin', require('./routes/adminRoutes'));
 // Basic Route
 app.get('/', (req, res) => {
   res.send('SyncSphere API is running...');

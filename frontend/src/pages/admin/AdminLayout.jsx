@@ -48,16 +48,16 @@ export default function AdminLayout() {
           <NavLink to="/admin/workspaces" className={navClass}>
             {({ isActive }) => (
               <>
-                <span className={iconClass({ isActive })}>grid_view</span>
-                <span className="font-body-md text-body-md">Workspaces</span>
+                <span className={iconClass({ isActive })}>people</span>
+                <span className="font-body-md text-body-md">Users</span>
               </>
             )}
           </NavLink>
           <NavLink to="/admin/channels" className={navClass}>
             {({ isActive }) => (
               <>
-                <span className={iconClass({ isActive })}>tag</span>
-                <span className="font-body-md text-body-md">Channels</span>
+                <span className={iconClass({ isActive })}>forum</span>
+                <span className="font-body-md text-body-md">Exports</span>
               </>
             )}
           </NavLink>
@@ -130,16 +130,16 @@ export default function AdminLayout() {
           <NavLink to="/admin/workspaces" className={navClass}>
             {({ isActive }) => (
               <>
-                <span className={iconClass({ isActive })}>grid_view</span>
-                <span className="font-body-md text-body-md">Workspaces</span>
+                <span className={iconClass({ isActive })}>people</span>
+                <span className="font-body-md text-body-md">Users</span>
               </>
             )}
           </NavLink>
           <NavLink to="/admin/channels" className={navClass}>
             {({ isActive }) => (
               <>
-                <span className={iconClass({ isActive })}>tag</span>
-                <span className="font-body-md text-body-md">Channels</span>
+                <span className={iconClass({ isActive })}>forum</span>
+                <span className="font-body-md text-body-md">Exports</span>
               </>
             )}
           </NavLink>
