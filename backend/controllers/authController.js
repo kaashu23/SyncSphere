@@ -88,3 +88,18 @@ exports.clerkWebhook = async (req, res) => {
 
   res.status(200).json({ success: true, message: 'Webhook received' });
 };
+
+const ImageKit = require('imagekit');
+exports.imagekitAuth = (req, res) => {
+  try {
+    const imagekit = new ImageKit({
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+    });
+    const authenticationParameters = imagekit.getAuthenticationParameters();
+    res.json(authenticationParameters);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
