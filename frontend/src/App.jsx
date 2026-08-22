@@ -11,6 +11,7 @@ import Settings from './pages/admin/Settings';
 import Workspaces from './pages/admin/Workspaces';
 import Channels from './pages/admin/Channels';
 import Events from './pages/admin/Events';
+import JoinGroup from './pages/JoinGroup';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -46,6 +47,17 @@ function App() {
               <>
                 <SignedIn>
                   <Onboarding />
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/" replace />
+                </SignedOut>
+              </>
+            } />
+
+            <Route path="/join/:inviteCode" element={
+              <>
+                <SignedIn>
+                  <JoinGroup />
                 </SignedIn>
                 <SignedOut>
                   <Navigate to="/" replace />

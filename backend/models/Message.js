@@ -63,6 +63,10 @@ const messageSchema = new mongoose.Schema({
     description: String,
     image: String,
   },
+  expiresAt: {
+    type: Date,
+    expires: 0
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Message', messageSchema);

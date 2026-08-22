@@ -396,3 +396,127 @@ exports.updateGroupInfo = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.togglePinMessage = async (req, res) => {
+  try {
+    const { chatId, messageId } = req.params;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!chat.users.some(id => id.equals(currentUser._id))) {
+      return res.status(403).json({ message: 'Not a member of this chat' });
+    }
+
+    if (!chat.pinnedMessages) chat.pinnedMessages = [];
+
+    const isPinned = chat.pinnedMessages.some(id => id.equals(messageId));
+    if (isPinned) {
+      chat.pinnedMessages = chat.pinnedMessages.filter(id => !id.equals(messageId));
+    } else {
+      chat.pinnedMessages.push(messageId);
+    }
+
+    await chat.save();
+    
+    // Broadcast updated chat
+    const io = req.app.get('io');
+    if (io) {
+      chat.users.forEach((u) => {
+        io.to(u.toString()).emit('chat updated', chat);
+      });
+    }
+
+    res.status(200).json(chat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.setDisappearingTimer = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { timer } = req.body;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!chat.users.some(id => id.equals(currentUser._id))) {
+      return res.status(403).json({ message: 'Not a member of this chat' });
+    }
+
+    chat.disappearingTimer = timer || 0;
+    await chat.save();
+
+    const fullChat = await getPopulatedChat(chat._id);
+    const io = req.app.get('io');
+    if (io) {
+      chat.users.forEach(u => {
+        io.to(u.toString()).emit('chat updated', fullChat);
+      });
+    }
+
+    res.status(200).json(fullChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const crypto = require('crypto');
+
+exports.generateInviteLink = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const clerkId = req.headers['clerk-id'];
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: 'Chat not found' });
+    if (!chat.isGroupChat) return res.status(400).json({ message: 'Not a group chat' });
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!isGroupAdmin(chat, currentUser)) {
+      return res.status(403).json({ message: 'Only admins can generate invite links' });
+    }
+
+    if (!chat.inviteCode) {
+      chat.inviteCode = crypto.randomBytes(8).toString('hex');
+      await chat.save();
+    }
+
+    res.status(200).json({ inviteCode: chat.inviteCode });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.joinByInviteLink = async (req, res) => {
+  try {
+    const { inviteCode } = req.params;
+    const clerkId = req.headers['clerk-id'];
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    const chat = await Chat.findOne({ inviteCode, isGroupChat: true });
+    if (!chat) return res.status(404).json({ message: 'Invalid or expired invite link' });
+
+    if (chat.users.some(id => id.equals(currentUser._id))) {
+      return res.status(400).json({ message: 'You are already a member of this group' });
+    }
+
+    chat.users.push(currentUser._id);
+    const fullChat = await saveAndBroadcast(req, chat);
+
+    res.status(200).json(fullChat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

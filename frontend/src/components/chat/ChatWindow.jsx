@@ -11,6 +11,8 @@ import EmojiPicker from 'emoji-picker-react';
 import { IKContext, IKUpload } from 'imagekitio-react';
 import ConfirmModal from '../common/ConfirmModal';
 import ChatWallpaperPicker from './ChatWallpaperPicker';
+import MediaGalleryModal from './MediaGalleryModal';
+import StickerPicker from './StickerPicker';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const authenticator = async () => {
@@ -33,12 +35,14 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const [newMessage, setNewMessage] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Call States
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false);
+  const [isMediaGalleryOpen, setIsMediaGalleryOpen] = useState(false);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   
   // Audio Recording States
@@ -155,24 +159,34 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   const myWallpaperObj = selectedChat?.wallpaperBy?.find(w => w.user === myUserId || w.user?._id === myUserId);
   const wallpaperUrl = myWallpaperObj?.wallpaperUrl || '';
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMessages = messages.filter(m => {
+    if (!searchQuery) return true;
+    if (m.type === 'text' && m.content.toLowerCase().includes(searchQuery.toLowerCase())) return true;
+    return false;
+  });
+
   useEffect(() => {
     fetchMessages();
   }, [selectedChat]);
 
   useEffect(() => {
     scrollToBottom('smooth');
-  }, [messages]);
+  }, [filteredMessages]);
 
-  const sendMessage = async () => {
-    if (newMessage.trim()) {
+  const sendMessage = async (e, contentOverride, type = 'text') => {
+    const finalContent = contentOverride || newMessage;
+    if (finalContent.trim()) {
       try {
         const config = { headers: { 'clerk-id': user?.id } };
-        const tempMessage = newMessage;
+        const tempMessage = finalContent;
         setNewMessage('');
         setShowEmojiPicker(false);
+        setShowStickerPicker(false);
         socket.emit('typing:stop', { chatId: selectedChat._id, userId: user?.id, users: selectedChat.users });
         
-        if (editingMessage) {
+        if (editingMessage && !contentOverride) {
           const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages/${editingMessage._id}`, { content: tempMessage }, config);
           socket.emit('message:edit', { message: data, users: selectedChat.users });
           setMessages(prev => prev.map(m => m._id === data._id ? data : m));
@@ -181,6 +195,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
           const payload = {
             content: tempMessage,
             chatId: selectedChat._id,
+            type: type
           };
           if (replyingToMessage) {
             payload.replyTo = replyingToMessage._id;
@@ -193,6 +208,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         }
       } catch (error) {
         console.error(error);
+        toast.error(error.response?.data?.message || 'Error sending message');
       }
     }
   };
@@ -226,6 +242,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
+        type: 'image'
       }, config);
       
       socket.emit('message:send', { message: data });
@@ -290,6 +307,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
       const { data } = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/messages`, {
         content: uploadData.url,
         chatId: selectedChat._id,
+        type: 'audio'
       }, config);
       socket.emit('message:send', { message: data });
       setMessages(prev => [...prev, data]);
@@ -300,6 +318,30 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     }
     setAudioBlob(null);
     setRecordingTime(0);
+  };
+
+  const handleExportChat = () => {
+    let content = `Chat Export - ${selectedChat.isGroupChat ? selectedChat.chatName : selectedChat.users.find(u => u.clerkId !== user?.id)?.displayName || 'User'}\n`;
+    content += `Generated on: ${new Date().toLocaleString()}\n\n`;
+    
+    messages.forEach(m => {
+      const senderName = m.sender._id === user?.id || m.sender.clerkId === user?.id ? 'Me' : m.sender.displayName;
+      const time = new Date(m.createdAt).toLocaleString();
+      let text = '';
+      if (m.type === 'text') text = m.content;
+      else text = `[Attachment: ${m.type} - ${m.content}]`;
+      
+      content += `[${time}] ${senderName}: ${text}\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ChatExport_${selectedChat._id}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Chat exported successfully');
   };
 
   const isArchivedForMe = selectedChat?.archivedBy?.some(u => u.clerkId === user?.id);
@@ -335,6 +377,45 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
   const handleDeleteChat = () => {
     setShowDeleteConfirm(true);
+  };
+
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
+  
+  useEffect(() => {
+    const fetchBlockStatus = async () => {
+      if (!selectedChat?.isGroupChat) {
+        try {
+          const config = { headers: { 'clerk-id': user?.id } };
+          const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/me`, config);
+          const otherUser = selectedChat.users.find(u => u.clerkId !== user?.id);
+          if (otherUser && data.blockedUsers?.includes(otherUser._id)) {
+            setIsBlockedByMe(true);
+          } else {
+            setIsBlockedByMe(false);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    };
+    fetchBlockStatus();
+  }, [selectedChat]);
+
+  const handleBlockUser = async () => {
+    const otherUser = selectedChat.users.find(u => u.clerkId !== user?.id);
+    if (!otherUser) return;
+    try {
+      const config = { headers: { 'clerk-id': user?.id } };
+      if (isBlockedByMe) {
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/unblock/${otherUser._id}`, {}, config);
+        toast.success('User unblocked');
+        setIsBlockedByMe(false);
+      } else {
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/users/block/${otherUser._id}`, {}, config);
+        toast.success('User blocked');
+        setIsBlockedByMe(true);
+      }
+    } catch (err) { toast.error('Error updating block status'); }
   };
 
   const handleRemoveFriend = async () => {
@@ -383,6 +464,35 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
     } catch (error) {
       console.error(error);
       toast.error('Failed to star message');
+    }
+  };
+
+  const handlePinMessage = async (messageId) => {
+    try {
+      const config = { headers: { 'clerk-id': user?.id } };
+      const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/pin/${messageId}`, {}, config);
+      onChatUpdate?.(data);
+      toast.success(data.pinnedMessages.includes(messageId) ? 'Message pinned' : 'Message unpinned');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to pin message');
+    }
+  };
+
+  const cycleDisappearingTimer = async () => {
+    try {
+      let nextTimer = 0;
+      if (!selectedChat.disappearingTimer || selectedChat.disappearingTimer === 0) nextTimer = 24;
+      else if (selectedChat.disappearingTimer === 24) nextTimer = 168; // 7 days
+      else nextTimer = 0;
+
+      const config = { headers: { 'clerk-id': user?.id } };
+      const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${selectedChat._id}/disappearing`, { timer: nextTimer }, config);
+      onChatUpdate?.(data);
+      toast.success(nextTimer === 0 ? 'Disappearing messages disabled' : `Disappearing messages set to ${nextTimer === 24 ? '24 hours' : '7 days'}`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update disappearing messages');
     }
   };
 
@@ -472,7 +582,13 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
             <span className="font-headline-md text-headline-md font-bold text-primary truncate md:overflow-visible">SyncSphere</span>
             <div className="relative w-full max-w-[240px] hidden md:block">
               <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-              <input className="w-full bg-surface-container-low border-none rounded-full py-xs pl-xl pr-sm font-body-sm text-body-sm focus:ring-1 focus:ring-primary focus:bg-surface transition-all placeholder:text-outline-variant text-on-surface" placeholder="Search..." type="text"/>
+              <input 
+                className="w-full bg-surface-container-low border-none rounded-full py-xs pl-xl pr-sm font-body-sm text-body-sm focus:ring-1 focus:ring-primary focus:bg-surface transition-all placeholder:text-outline-variant text-on-surface" 
+                placeholder="Search messages..." 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
           <div className="flex items-center gap-1 md:gap-sm text-on-surface-variant shrink-0">
@@ -482,7 +598,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
         </header>
 
         {/* Active Chat Sub-Header */}
-        <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-40 shadow-sm relative">
+        <div className="flex items-center justify-between px-4 md:px-margin-desktop py-sm bg-surface-bright/80 backdrop-blur-md border-b border-outline-variant/30 shrink-0 z-[100] shadow-sm relative">
           <div className="flex items-center gap-2 md:gap-md">
             <div className="relative">
               <img alt="Chat Contact" className="w-12 h-12 rounded-full object-cover ring-2 ring-surface" src={selectedChat.isGroupChat ? (selectedChat.chatAvatar || '/logo.png') : selectedChat.users.find(u => u.clerkId !== user?.id)?.avatarUrl || '/avatars/avatar_female_light.jpg'} />
@@ -544,10 +660,20 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
               </button>
               {chatMenuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setChatMenuOpen(false)}></div>
-                <div className="absolute right-0 mt-2 w-48 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-50">
+                <div className="fixed inset-0 z-[100]" onClick={() => setChatMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-surface border border-outline-variant/30 rounded-xl shadow-2xl overflow-hidden z-[110]">
                   <button onClick={() => { handleArchiveChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
                     <span className="material-symbols-outlined text-[18px]">{isArchivedForMe ? 'unarchive' : 'archive'}</span> {isArchivedForMe ? 'Unarchive Chat' : 'Archive Chat'}
+                  </button>
+                  <button onClick={() => { handleExportChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">download</span> Export Chat
+                  </button>
+                  <button onClick={() => { setIsMediaGalleryOpen(true); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">perm_media</span> Media Gallery
+                  </button>
+                  <button onClick={() => { cycleDisappearingTimer(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
+                    <span className="material-symbols-outlined text-[18px]">timer</span> 
+                    Auto-Delete: {(!selectedChat.disappearingTimer || selectedChat.disappearingTimer === 0) ? 'Off' : (selectedChat.disappearingTimer === 24 ? '24h' : '7d')}
                   </button>
                   <button onClick={() => { handleMuteChat(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-surface-container-low transition-colors text-on-surface">
                     <span className="material-symbols-outlined text-[18px]">volume_off</span> Mute Notifications
@@ -563,6 +689,9 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                   {!selectedChat.isGroupChat && (
                     <>
                       <div className="h-px w-full bg-outline-variant/30 my-1"></div>
+                      <button onClick={() => { handleBlockUser(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
+                        <span className="material-symbols-outlined text-[18px]">block</span> {isBlockedByMe ? 'Unblock User' : 'Block User'}
+                      </button>
                       <button onClick={() => { handleRemoveFriend(); setChatMenuOpen(false); }} className="w-full flex items-center gap-2 text-left px-md py-sm font-body-sm hover:bg-error-container hover:text-on-error-container transition-colors text-error">
                         <span className="material-symbols-outlined text-[18px]">person_remove</span> Remove Friend
                       </button>
@@ -585,12 +714,39 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
           style={wallpaperUrl ? { backgroundImage: `url(${wallpaperUrl})` } : {}}
         >
           {wallpaperUrl && <div className="absolute inset-0 bg-black/40 z-0"></div>}
+          
+          {selectedChat?.pinnedMessages && selectedChat.pinnedMessages.length > 0 && (
+            <div className="sticky top-0 w-full bg-surface-bright/95 backdrop-blur-md border-b border-outline-variant/30 z-30 px-4 py-2 shadow-sm">
+              <div className="max-w-[900px] mx-auto flex flex-col gap-1">
+                {selectedChat.pinnedMessages.map((pinnedId) => {
+                  const pinnedMsg = messages.find(m => m._id === pinnedId);
+                  if (!pinnedMsg) return null;
+                  return (
+                    <div key={`pin-${pinnedId}`} className="flex items-center gap-2 text-sm">
+                      <span className="material-symbols-outlined text-primary text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>push_pin</span>
+                      <span className="font-semibold text-on-surface text-xs truncate max-w-[80px]">{pinnedMsg.sender.displayName}:</span>
+                      <span className="text-on-surface-variant text-xs truncate flex-1">{pinnedMsg.type === 'text' ? pinnedMsg.content : `[${pinnedMsg.type}]`}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="w-full max-w-[900px] flex-1 px-4 md:px-margin-desktop py-lg flex flex-col gap-sm justify-end pb-xl z-10 relative">
             <div className="flex items-center justify-center gap-md my-sm">
               <div className="h-px bg-outline-variant/30 flex-1"></div>
               <span className="font-label-caps text-label-caps text-outline px-sm py-xs bg-surface-container-lowest rounded-full border border-outline-variant/20 shadow-ambient">TODAY</span>
               <div className="h-px bg-outline-variant/30 flex-1"></div>
             </div>
+            
+            {searchQuery && (
+              <div className="flex items-center justify-center mb-4">
+                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
+                  Showing results for "{searchQuery}"
+                </span>
+              </div>
+            )}
             
             <AnimatePresence>
               {initialLoading ? (
@@ -600,11 +756,12 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                     <div className={`h-16 w-48 bg-surface-variant animate-pulse rounded-2xl ${i % 2 === 0 ? 'rounded-br-sm' : 'rounded-bl-sm'}`}></div>
                   </motion.div>
                 ))
-              ) : messages.map((m, i) => {
+              ) : filteredMessages.map((m, i) => {
                const isMine = m.sender._id === user?.id || m.sender.clerkId === user?.id;
                const isImage = m.type === 'image' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && (m.content.match(/\.(jpeg|jpg|gif|png)$/) != null || m.content.includes('tr:')));
                const isAudio = m.type === 'audio' || (m.content.startsWith('http') && m.content.includes('ik.imagekit.io') && m.content.match(/\.(webm|mp3|wav|ogg)$/) != null);
-               const isFile = !isImage && !isAudio && m.content.startsWith('http') && m.content.includes('ik.imagekit.io');
+               const isSticker = m.type === 'gif';
+               const isFile = !isImage && !isAudio && !isSticker && m.content.startsWith('http') && m.content.includes('ik.imagekit.io');
                
                // Count reactions
                const reactionCounts = {};
@@ -633,6 +790,9 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                      
                      {/* Hover Actions */}
                      <div className={`absolute top-0 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/80 backdrop-blur-md rounded-full shadow-sm border border-outline-variant/30 p-0.5`}>
+                       <button onClick={() => handlePinMessage(m._id)} className={`p-1.5 rounded-full hover:bg-surface-container-high transition-colors flex ${selectedChat?.pinnedMessages?.includes(m._id) ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`} title="Pin message">
+                         <span className="material-symbols-outlined text-[16px]" style={selectedChat?.pinnedMessages?.includes(m._id) ? {fontVariationSettings: "'FILL' 1"} : {}}>push_pin</span>
+                       </button>
                        <button onClick={() => handleStarMessage(m._id)} className={`p-1.5 rounded-full hover:bg-surface-container-high transition-colors flex ${m.starredBy?.includes(user?.id) ? 'text-yellow-500' : 'text-on-surface-variant hover:text-primary'}`} title="Star message">
                          <span className="material-symbols-outlined text-[16px]" style={m.starredBy?.includes(user?.id) ? {fontVariationSettings: "'FILL' 1"} : {}}>star</span>
                        </button>
@@ -686,6 +846,8 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
 
                        {isImage ? (
                          <img src={m.content} className="max-w-[240px] rounded-lg mb-1 object-cover" />
+                       ) : isSticker ? (
+                         <img src={m.content} className="max-w-[150px] rounded-lg mb-1" />
                        ) : isAudio ? (
                          <audio src={m.content} controls className="max-w-[240px] h-[40px] rounded-lg mb-1" />
                        ) : isFile ? (
@@ -790,9 +952,18 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
           </div>
 
           <div className="w-full max-w-[900px]">
-            {showEmojiPicker && audioState === 'idle' && (
-              <div className="absolute bottom-[100px] left-8 z-[1000] shadow-2xl">
-                <EmojiPicker emojiStyle="native" onEmojiClick={onEmojiClick} theme={theme} />
+            {(showEmojiPicker || showStickerPicker) && audioState === 'idle' && (
+              <div className="absolute bottom-full mb-2 left-0 z-50 flex gap-2">
+                {showEmojiPicker && (
+                  <EmojiPicker emojiStyle="native" onEmojiClick={onEmojiClick} theme={theme} width={300} height={400} />
+                )}
+                {showStickerPicker && (
+                  <StickerPicker onSelect={(url) => {
+                    const fakeEvent = { preventDefault: () => {} };
+                    sendMessage(fakeEvent, url, 'gif');
+                    setShowStickerPicker(false);
+                  }} />
+                )}
               </div>
             )}
             <div className="flex items-end gap-1 md:gap-sm bg-surface border border-outline-variant rounded-2xl px-1 md:px-sm py-1 md:py-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
@@ -817,8 +988,11 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                     }}
                   ></textarea>
                   <div className="flex items-center gap-0 md:gap-1 self-end mb-0.5 pr-0 md:pr-xs">
-                    <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-1 md:p-sm transition-colors rounded-full hover:bg-surface-container-low ${showEmojiPicker ? 'text-primary' : 'text-outline hover:text-primary'}`}>
-                      <span className="material-symbols-outlined text-[20px] md:text-[22px]">mood</span>
+                    <button onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowStickerPicker(false); }} className={`p-1 md:p-sm transition-colors rounded-full hover:bg-surface-container-low ${showEmojiPicker ? 'text-primary' : 'text-outline hover:text-primary'}`}>
+                      <span className="material-symbols-outlined text-[20px] md:text-[24px]">mood</span>
+                    </button>
+                    <button onClick={() => { setShowStickerPicker(!showStickerPicker); setShowEmojiPicker(false); }} className={`p-1 md:p-sm transition-colors rounded-full hover:bg-surface-container-low ${showStickerPicker ? 'text-primary' : 'text-outline hover:text-primary'}`}>
+                      <span className="material-symbols-outlined text-[20px] md:text-[24px]">sticky_note_2</span>
                     </button>
                     <button onClick={startRecording} className="p-1 md:p-sm text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container-low">
                       <span className="material-symbols-outlined text-[20px] md:text-[22px]">mic</span>
@@ -925,6 +1099,12 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
             onUpdate={onChatUpdate}
           />
         )}
+
+        <MediaGalleryModal
+          isOpen={isMediaGalleryOpen}
+          onClose={() => setIsMediaGalleryOpen(false)}
+          messages={messages}
+        />
       </div>
     </IKContext>
   );

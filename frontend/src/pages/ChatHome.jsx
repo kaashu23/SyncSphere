@@ -37,6 +37,7 @@ export default function ChatHome() {
   const [friendsData, setFriendsData] = useState({ friends: [], friendRequests: [], sentRequests: [] });
   const friendsDataRef = useRef(friendsData);
   const selectedChatRef = useRef(selectedChat);
+  const chatsRef = useRef(chats);
   
   const [activeTab, setActiveTab] = useState('Direct Messages');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -93,6 +94,10 @@ export default function ChatHome() {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
 
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
+
   const handleStartCall = (isVideo, targetUser) => {
     setTargetUserForCall(targetUser);
     setCallIsVideo(isVideo);
@@ -148,6 +153,10 @@ export default function ChatHome() {
   // Live socket: update the chat list when a message arrives
   useEffect(() => {
     if (!user) return;
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     
     if (!socket.connected) {
       socket.connect();
@@ -156,6 +165,27 @@ export default function ChatHome() {
 
     socket.on('message:new', (newMessage) => {
       updateChatWithMessage(newMessage);
+
+      const isFromMe = (newMessage.sender?._id || newMessage.sender?.clerkId) === user?.id;
+      const isCurrentlyOpen = selectedChatRef.current && selectedChatRef.current._id === (newMessage.chat?._id || newMessage.chat);
+      const chatObj = chatsRef.current?.find(c => c._id === (newMessage.chat?._id || newMessage.chat));
+      const isMuted = chatObj?.mutedBy?.includes(user?.id);
+
+      if (!isFromMe && (!isCurrentlyOpen || document.hidden) && !isMuted) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const senderName = newMessage.sender?.displayName || newMessage.sender?.firstName || 'Someone';
+          let body = newMessage.content;
+          if (newMessage.type === 'image') body = '📷 Photo';
+          else if (newMessage.type === 'video') body = '🎥 Video';
+          else if (newMessage.type === 'audio') body = '🎵 Audio';
+          else if (newMessage.type === 'gif') body = 'Sticker';
+          
+          new Notification(`New message from ${senderName}`, {
+            body: body,
+            icon: newMessage.sender?.avatarUrl || '/logo.png',
+          });
+        }
+      }
     });
 
     socket.on('friend-request-received', (newRequest) => {

@@ -232,10 +232,46 @@ exports.getFriends = async (req, res) => {
     res.status(200).json({
       friends: currentUser.friends,
       friendRequests: currentUser.friendRequests,
-      sentRequests: currentUser.sentRequests
+      sentRequests: currentUser.sentRequests,
+      blockedUsers: currentUser.blockedUsers
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+exports.blockUser = async (req, res) => {
+  try {
+    const clerkId = req.headers['clerk-id'];
+    const targetUserId = req.params.id;
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    if (!currentUser.blockedUsers.includes(targetUserId)) {
+      currentUser.blockedUsers.push(targetUserId);
+      await currentUser.save();
+    }
+
+    res.status(200).json({ message: 'User blocked successfully', blockedUsers: currentUser.blockedUsers });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.unblockUser = async (req, res) => {
+  try {
+    const clerkId = req.headers['clerk-id'];
+    const targetUserId = req.params.id;
+
+    const currentUser = await User.findOne({ clerkId });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    currentUser.blockedUsers = currentUser.blockedUsers.filter(id => id.toString() !== targetUserId.toString());
+    await currentUser.save();
+
+    res.status(200).json({ message: 'User unblocked successfully', blockedUsers: currentUser.blockedUsers });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

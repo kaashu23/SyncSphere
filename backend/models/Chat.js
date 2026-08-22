@@ -17,7 +17,10 @@ const chatSchema = new mongoose.Schema(
     wallpaperBy: [{
       user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       wallpaperUrl: { type: String, default: '' }
-    }]
+    }],
+    pinnedMessages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }],
+    disappearingTimer: { type: Number, default: 0 }, // hours: 0 (off), 24, 168
+    inviteCode: { type: String, default: null }
   },
   { timestamps: true }
 );

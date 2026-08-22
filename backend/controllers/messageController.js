@@ -15,8 +15,20 @@ exports.sendMessage = async (req, res) => {
     const currentUser = await User.findOne({ clerkId });
     if (!currentUser) return res.status(404).json({ message: 'User not found' });
 
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findById(chatId).populate('users');
     if (!chat) return res.status(404).json({ message: 'Chat not found' });
+
+    if (!chat.isGroupChat) {
+      const otherUser = chat.users.find(u => u._id.toString() !== currentUser._id.toString());
+      if (otherUser) {
+        if (currentUser.blockedUsers.includes(otherUser._id)) {
+          return res.status(403).json({ message: 'You have blocked this user' });
+        }
+        if (otherUser.blockedUsers && otherUser.blockedUsers.includes(currentUser._id)) {
+          return res.status(403).json({ message: 'You have been blocked by this user' });
+        }
+      }
+    }
 
     var newMessage = {
       sender: currentUser._id,
@@ -31,6 +43,10 @@ exports.sendMessage = async (req, res) => {
 
     if (forwardedFrom) {
       newMessage.forwardedFrom = forwardedFrom;
+    }
+
+    if (chat.disappearingTimer && chat.disappearingTimer > 0) {
+      newMessage.expiresAt = new Date(Date.now() + chat.disappearingTimer * 3600 * 1000);
     }
 
     if (type !== 'image' && type !== 'video' && type !== 'audio') {

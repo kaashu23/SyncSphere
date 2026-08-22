@@ -24,6 +24,7 @@ export default function GroupSettingsModal({ isOpen, onClose, chat, onChatUpdate
   const [searchResult, setSearchResult] = useState([]);
   const [busy, setBusy] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
+  const [inviteLink, setInviteLink] = useState('');
 
   useEffect(() => {
     if (isOpen && chat) {
@@ -141,6 +142,21 @@ export default function GroupSettingsModal({ isOpen, onClose, chat, onChatUpdate
     }
   };
 
+  const handleGenerateInvite = async () => {
+    try {
+      setBusy(true);
+      const { data } = await axios.get(`${API}/api/chats/${chat._id}/invite`, config());
+      const link = `${window.location.origin}/join/${data.inviteCode}`;
+      setInviteLink(link);
+      navigator.clipboard.writeText(link);
+      toast.success('Invite link generated and copied!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error generating invite link');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <>
       <IKContext publicKey={import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_dummy'} urlEndpoint={import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/dummy'} authenticator={authenticator}>
@@ -193,6 +209,25 @@ export default function GroupSettingsModal({ isOpen, onClose, chat, onChatUpdate
                 <button onClick={onClose} className="flex-1 py-2 rounded-lg font-title-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-colors">Cancel</button>
                 <button onClick={handleSave} disabled={saving || uploading} className="flex-1 py-2 rounded-lg font-title-sm text-on-primary bg-primary hover:bg-primary-container transition-colors disabled:opacity-50">Save Changes</button>
               </div>
+
+              {currentUserIsAdmin && (
+                <div className="border-t border-outline-variant/30 pt-md pb-md flex flex-col gap-2">
+                  <h4 className="font-title-sm text-on-surface font-semibold">Invite Link</h4>
+                  <p className="text-xs text-on-surface-variant">Share this link with others to let them join the group.</p>
+                  {inviteLink ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="text" readOnly value={inviteLink} className="flex-1 bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-1.5 text-sm font-mono text-on-surface outline-none" />
+                      <button onClick={() => { navigator.clipboard.writeText(inviteLink); toast.success('Copied!'); }} className="p-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={handleGenerateInvite} disabled={busy} className="mt-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors font-body-sm text-on-surface disabled:opacity-50 border border-outline-variant/30">
+                      <span className="material-symbols-outlined text-[18px]">link</span> Generate Invite Link
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div className="border-t border-outline-variant/30 pt-md">
                 <div className="relative mb-1">

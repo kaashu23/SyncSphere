@@ -7,7 +7,9 @@ const {
   acceptRequest,
   rejectRequest,
   removeFriend,
-  getFriends
+  getFriends,
+  blockUser,
+  unblockUser
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -22,5 +24,9 @@ router.post('/accept/:id', acceptRequest);
 router.post('/reject/:id', rejectRequest);
 router.post('/remove/:id', removeFriend);
 router.get('/friends', getFriends);
+
+// Block Routes
+router.post('/block/:id', blockUser);
+router.post('/unblock/:id', unblockUser);
 
 module.exports = router;
