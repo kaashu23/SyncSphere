@@ -377,13 +377,20 @@ export default function ChatHome() {
       {/* Desktop Sidebar (hidden on mobile) */}
       <aside className="hidden md:flex w-[260px] h-full bg-surface-lowest border-r border-outline-variant flex-col fixed left-0 top-0 z-50">
         {/* Header */}
-        <div className="flex items-center gap-sm px-sm mb-lg">
-          <img src="/logo.png" alt="SyncSphere Logo" className="w-11 h-11 rounded-full border-2 border-primary-fixed shadow-ambient object-cover" />
-          <div className="flex flex-col flex-1">
-            <span className="font-headline-md text-headline-md font-bold text-primary leading-tight">SyncSphere</span>
+        <div className="flex items-center justify-between px-sm pt-4 mb-lg">
+          <div className="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white shrink-0">
+              <g transform="rotate(-30 12 12)">
+                <circle cx="7.3" cy="3.2" r="1.45" />
+                <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8" />
+                <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8" />
+                <circle cx="16.7" cy="20.8" r="1.45" />
+              </g>
+            </svg>
+            <span className="font-headline-md text-title-lg font-bold text-primary leading-tight tracking-tight">SyncSphere</span>
           </div>
-          <div className="w-11 h-11 rounded-full border-2 border-surface shadow-ambient flex items-center justify-center overflow-hidden shrink-0">
-            <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-11 h-11" } }} />
+          <div className="flex items-center justify-center shrink-0 border border-outline-variant/30 rounded-full bg-surface-container-low p-1 shadow-sm">
+            <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
           </div>
         </div>
         

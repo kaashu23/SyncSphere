@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { useSelector } from 'react-redux';
 import { useEffect } from 'react';
-import Landing from './pages/Landing';
 import ChatHome from './pages/ChatHome';
 import Onboarding from './pages/Onboarding';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -12,6 +11,7 @@ import Workspaces from './pages/admin/Workspaces';
 import Channels from './pages/admin/Channels';
 import Events from './pages/admin/Events';
 import JoinGroup from './pages/JoinGroup';
+import ThemeLandingPage from './pages/ThemeLandingPage';
 
 import { Toaster } from 'react-hot-toast';
 
@@ -41,7 +41,7 @@ function App() {
           <Toaster position="bottom-right" toastOptions={{ className: 'font-body-md text-on-surface bg-surface shadow-ambient border border-outline-variant/30' }} />
           <Routes>
             {/* Landing page doubles as the Login page */}
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<ThemeLandingPage />} />
             
             <Route path="/onboarding" element={
               <>
