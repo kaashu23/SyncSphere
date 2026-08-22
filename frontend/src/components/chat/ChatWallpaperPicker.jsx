@@ -10,11 +10,11 @@ export default function ChatWallpaperPicker({ chatId, currentUser, onUpdate, onC
     setLoading(true);
     try {
       const config = { headers: { 'clerk-id': currentUser.id } };
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/wallpaper`, {
+      const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/wallpaper`, {
         wallpaperUrl: res.url
       }, config);
       toast.success('Wallpaper updated!');
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(data);
       if (onClose) onClose();
     } catch (error) {
       toast.error('Failed to update wallpaper');
@@ -33,11 +33,11 @@ export default function ChatWallpaperPicker({ chatId, currentUser, onUpdate, onC
     setLoading(true);
     try {
       const config = { headers: { 'clerk-id': currentUser.id } };
-      await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/wallpaper`, {
+      const { data } = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chats/${chatId}/wallpaper`, {
         wallpaperUrl: ''
       }, config);
       toast.success('Wallpaper removed!');
-      if (onUpdate) onUpdate();
+      if (onUpdate) onUpdate(data);
       if (onClose) onClose();
     } catch (error) {
       toast.error('Failed to remove wallpaper');
