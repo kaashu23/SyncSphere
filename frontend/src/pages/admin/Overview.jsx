@@ -10,12 +10,21 @@ export default function Overview() {
     pendingReports: 0
   });
 
+  const [loading, setLoading] = useState(true);
+
   const fetchStats = async () => {
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/stats`);
-      setStats(data);
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+      const { data } = await axios.get(`${baseUrl}/api/admin/stats`);
+      
+      // Ensure we don't accidentally set HTML as state if the request fails
+      if (typeof data === 'object') {
+        setStats(data);
+      }
     } catch (error) {
       console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,55 +43,71 @@ export default function Overview() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter">
-        <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-title-sm text-title-sm text-on-surface-variant">Total Users</span>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface">
-              <span className="material-symbols-outlined text-[18px]">group</span>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="h-4 bg-surface-container-high rounded w-24"></div>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high"></div>
+              </div>
+              <div className="flex items-baseline gap-sm mt-2">
+                <div className="h-10 bg-surface-container-high rounded w-16"></div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-baseline gap-sm">
-            <span className="font-display-lg text-display-lg text-on-surface">{stats.totalUsers}</span>
-          </div>
-        </div>
+          ))
+        ) : (
+          <>
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-title-sm text-title-sm text-on-surface-variant">Total Users</span>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface">
+                  <span className="material-symbols-outlined text-[18px]">group</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-sm">
+                <span className="font-display-lg text-display-lg text-on-surface">{stats.totalUsers}</span>
+              </div>
+            </div>
 
-        <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-title-sm text-title-sm text-on-surface-variant">Active Online</span>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-green-400">
-              <span className="material-symbols-outlined text-[18px]">online_prediction</span>
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-title-sm text-title-sm text-on-surface-variant">Active Online</span>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-green-400">
+                  <span className="material-symbols-outlined text-[18px]">online_prediction</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-sm">
+                <span className="font-display-lg text-display-lg text-on-surface text-green-400 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span> {stats.activeUsers}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-baseline gap-sm">
-            <span className="font-display-lg text-display-lg text-on-surface text-green-400 flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span> {stats.activeUsers}
-            </span>
-          </div>
-        </div>
 
-        <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-title-sm text-title-sm text-on-surface-variant">Total Chats</span>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary-fixed">
-              <span className="material-symbols-outlined text-[18px]">forum</span>
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-title-sm text-title-sm text-on-surface-variant">Total Chats</span>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary-fixed">
+                  <span className="material-symbols-outlined text-[18px]">forum</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-sm">
+                <span className="font-display-lg text-display-lg text-on-surface">{stats.totalChats}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-baseline gap-sm">
-            <span className="font-display-lg text-display-lg text-on-surface">{stats.totalChats}</span>
-          </div>
-        </div>
 
-        <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-title-sm text-title-sm text-on-surface-variant">Total Messages</span>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface">
-              <span className="material-symbols-outlined text-[18px]">chat</span>
+            <div className="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-ambient flex flex-col gap-sm">
+              <div className="flex items-center justify-between">
+                <span className="font-title-sm text-title-sm text-on-surface-variant">Total Messages</span>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface">
+                  <span className="material-symbols-outlined text-[18px]">chat</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-sm">
+                <span className="font-display-lg text-display-lg text-on-surface">{stats.totalMessages}</span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-baseline gap-sm">
-            <span className="font-display-lg text-display-lg text-on-surface">{stats.totalMessages}</span>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
