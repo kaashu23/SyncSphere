@@ -693,8 +693,6 @@ export default function ChatHome() {
         onUpdate={fetchChats} 
       />
       
-      <StatusFeed isOpen={isStatusFeedOpen} onClose={() => setIsStatusFeedOpen(false)} currentUser={user} />
-      
       <VideoCallModal 
         isOpen={isVideoCallOpen} 
         onClose={() => {
