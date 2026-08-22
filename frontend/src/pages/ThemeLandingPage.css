@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap');
+
 /* Force black immediately */
 .theme-landing-root {
     background: #000000 !important;
@@ -25,8 +27,6 @@
     font-display: swap;
     src: url("instrument-serif-italic.woff2") format("woff2");
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap');
 
 :root {
     --bg: #000000;
@@ -508,123 +508,14 @@
       opacity: 1 !important;
   }
 
-  @keyframes in-scale {
-      from {
-          opacity: 0;
-          transform: scale(0.84);
-      }
 
-      to {
-          opacity: 1;
-          transform: scale(1);
-      }
-  }
 
-  @keyframes in-soft {
-      from {
-          opacity: 0;
-          transform: translateY(14px);
-      }
 
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
 
-  @keyframes in-mask {
-      from {
-          opacity: 0;
-          transform: translateY(40%);
-      }
 
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
 
-  @keyframes in-pop {
-      0% {
-          opacity: 0;
-          transform: scale(0.9);
-      }
 
-      70% {
-          opacity: 1;
-          transform: scale(1.03);
-      }
 
-      100% {
-          opacity: 1;
-          transform: scale(1);
-      }
-  }
-
-  @keyframes in-btn {
-      from {
-          opacity: 0;
-          transform: translateY(18px) scale(0.94);
-      }
-
-      to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-      }
-  }
-
-  @keyframes in-side {
-      from {
-          opacity: 0;
-          transform: translateX(22px);
-      }
-
-      to {
-          opacity: 1;
-          transform: translateX(0);
-      }
-  }
-
-  @keyframes in-stat {
-      from {
-          opacity: 0;
-          transform: translateY(20px);
-      }
-
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
-  }
-
-  @keyframes in-star {
-      0% {
-          opacity: 0;
-          transform: scale(0.2) rotate(-50deg);
-      }
-
-      65% {
-          opacity: 1;
-          transform: scale(1.2) rotate(8deg);
-      }
-
-      100% {
-          opacity: 1;
-          transform: scale(1) rotate(0);
-      }
-  }
-
-  @keyframes in-em {
-      from {
-          opacity: 0.35;
-          filter: blur(4px);
-      }
-
-      to {
-          opacity: 1;
-          filter: blur(0);
-      }
-  }
 
   @media (prefers-reduced-motion: reduce) {
 
@@ -975,3 +866,123 @@
       }
   }
 }
+
+
+/* @keyframes extracted */
+  @keyframes in-scale {
+      from {
+          opacity: 0;
+          transform: scale(0.84);
+      }
+
+      to {
+          opacity: 1;
+          transform: scale(1);
+      }
+  }
+
+  @keyframes in-soft {
+      from {
+          opacity: 0;
+          transform: translateY(14px);
+      }
+
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  @keyframes in-mask {
+      from {
+          opacity: 0;
+          transform: translateY(40%);
+      }
+
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  @keyframes in-pop {
+      0% {
+          opacity: 0;
+          transform: scale(0.9);
+      }
+
+      70% {
+          opacity: 1;
+          transform: scale(1.03);
+      }
+
+      100% {
+          opacity: 1;
+          transform: scale(1);
+      }
+  }
+
+  @keyframes in-btn {
+      from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.94);
+      }
+
+      to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+  }
+
+  @keyframes in-side {
+      from {
+          opacity: 0;
+          transform: translateX(22px);
+      }
+
+      to {
+          opacity: 1;
+          transform: translateX(0);
+      }
+  }
+
+  @keyframes in-stat {
+      from {
+          opacity: 0;
+          transform: translateY(20px);
+      }
+
+      to {
+          opacity: 1;
+          transform: translateY(0);
+      }
+  }
+
+  @keyframes in-star {
+      0% {
+          opacity: 0;
+          transform: scale(0.2) rotate(-50deg);
+      }
+
+      65% {
+          opacity: 1;
+          transform: scale(1.2) rotate(8deg);
+      }
+
+      100% {
+          opacity: 1;
+          transform: scale(1) rotate(0);
+      }
+  }
+
+  @keyframes in-em {
+      from {
+          opacity: 0.35;
+          filter: blur(4px);
+      }
+
+      to {
+          opacity: 1;
+          filter: blur(0);
+      }
+  }
