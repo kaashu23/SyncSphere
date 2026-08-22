@@ -1,18 +1,20 @@
 module.exports = (socket, io) => {
-  socket.on('message:send', ({ message }) => {
-    if (!message || !message.chat || !message.chat.users) return;
+  socket.on('message:send', ({ message, users }) => {
+    const targetUsers = users || (message && message.chat && message.chat.users);
+    if (!message || !targetUsers) return;
     
-    message.chat.users.forEach(user => {
+    targetUsers.forEach(user => {
       if (user._id.toString() === message.sender._id.toString() || user.clerkId === message.sender.clerkId) return;
       const targetRoom = user.clerkId || user._id;
       io.to(targetRoom.toString()).emit('message:new', message);
     });
   });
 
-  socket.on('message:edit', ({ message }) => {
-    if (!message || !message.chat || !message.chat.users) return;
+  socket.on('message:edit', ({ message, users }) => {
+    const targetUsers = users || (message && message.chat && message.chat.users);
+    if (!message || !targetUsers) return;
     
-    message.chat.users.forEach(user => {
+    targetUsers.forEach(user => {
       if (user._id.toString() === message.sender._id.toString() || user.clerkId === message.sender.clerkId) return;
       const targetRoom = user.clerkId || user._id;
       io.to(targetRoom.toString()).emit('message:updated', message);
@@ -29,10 +31,11 @@ module.exports = (socket, io) => {
     });
   });
 
-  socket.on('message:react', ({ message }) => {
-    if (!message || !message.chat || !message.chat.users) return;
+  socket.on('message:react', ({ message, users }) => {
+    const targetUsers = users || (message && message.chat && message.chat.users);
+    if (!message || !targetUsers) return;
     
-    message.chat.users.forEach(user => {
+    targetUsers.forEach(user => {
       const targetRoom = user.clerkId || user._id;
       io.to(targetRoom.toString()).emit('message:reaction', message);
     });

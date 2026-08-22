@@ -241,7 +241,8 @@ exports.muteChat = async (req, res) => {
       chat.mutedBy.push(user._id);
     }
     await chat.save();
-    res.status(200).json(chat);
+    const updatedChat = await getPopulatedChat(chat._id);
+    res.status(200).json(updatedChat);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -423,15 +424,17 @@ exports.togglePinMessage = async (req, res) => {
 
     await chat.save();
     
+    const updatedChat = await getPopulatedChat(chat._id);
+
     // Broadcast updated chat
     const io = req.app.get('io');
     if (io) {
-      chat.users.forEach((u) => {
-        io.to(u.toString()).emit('chat updated', chat);
+      updatedChat.users.forEach((u) => {
+        io.to(u._id.toString()).emit('chat updated', updatedChat);
       });
     }
 
-    res.status(200).json(chat);
+    res.status(200).json(updatedChat);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

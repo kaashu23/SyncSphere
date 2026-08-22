@@ -127,6 +127,7 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
   }, [user, selectedChat]);
 
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
+  const [activeMobileMessageId, setActiveMobileMessageId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
@@ -724,8 +725,8 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                   return (
                     <div key={`pin-${pinnedId}`} className="flex items-center gap-2 text-sm">
                       <span className="material-symbols-outlined text-primary text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>push_pin</span>
-                      <span className="font-semibold text-on-surface text-xs truncate max-w-[80px]">{pinnedMsg.sender.displayName}:</span>
-                      <span className="text-on-surface-variant text-xs truncate flex-1">{pinnedMsg.type === 'text' ? pinnedMsg.content : `[${pinnedMsg.type}]`}</span>
+                      <span className="font-semibold text-on-surface text-xs truncate max-w-[80px]">{pinnedMsg.sender?.displayName || pinnedMsg.sender?.firstName || 'User'}:</span>
+                      <span className="text-on-surface-variant text-xs truncate flex-1">{pinnedMsg.type === 'text' ? pinnedMsg.content : `[${pinnedMsg.type || 'attachment'}]`}</span>
                     </div>
                   );
                 })}
@@ -781,15 +782,15 @@ export default function ChatWindow({ selectedChat, user, onBack, onMessageSent, 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     layout
+                    onDoubleClick={() => setActiveMobileMessageId(activeMobileMessageId === m._id ? null : m._id)}
                     className={`flex items-end gap-2 md:gap-sm group max-w-[95%] md:max-w-[85%] ${isMine ? 'self-end flex-row-reverse' : 'self-start'}`}
                   >
                    {!isMine && (
                      <img src={m.sender?.avatarUrl || '/avatars/avatar_female_light.jpg'} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1" />
                    )}
                    <div className={`flex flex-col gap-1 ${isMine ? 'items-end' : 'items-start'} relative`}>
-                     
                      {/* Hover Actions */}
-                     <div className={`absolute top-0 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-surface/80 backdrop-blur-md rounded-full shadow-sm border border-outline-variant/30 p-0.5`}>
+                     <div className={`absolute top-0 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} flex items-center transition-opacity z-10 bg-surface/80 backdrop-blur-md rounded-full shadow-sm border border-outline-variant/30 p-0.5 ${activeMobileMessageId === m._id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
                        <button onClick={() => handlePinMessage(m._id)} className={`p-1.5 rounded-full hover:bg-surface-container-high transition-colors flex ${selectedChat?.pinnedMessages?.includes(m._id) ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`} title="Pin message">
                          <span className="material-symbols-outlined text-[16px]" style={selectedChat?.pinnedMessages?.includes(m._id) ? {fontVariationSettings: "'FILL' 1"} : {}}>push_pin</span>
                        </button>

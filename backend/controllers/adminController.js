@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
+const AdminNotification = require('../models/AdminNotification');
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -8,9 +9,8 @@ const getDashboardStats = async (req, res) => {
     const totalChats = await Chat.countDocuments();
     const totalMessages = await Message.countDocuments();
     
-    // Estimate active users from socket connections
-    const io = req.app.get('io');
-    const activeUsers = io && io.sockets && io.sockets.sockets ? io.sockets.sockets.size : 0;
+    // Estimate active users from database status
+    const activeUsers = await User.countDocuments({ status: 'online' });
     
     // Mock pending reports since there's no model for it yet
     const pendingReports = 0;
@@ -76,4 +76,31 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getAllChats, exportChat, getAllUsers };
+const getNotifications = async (req, res) => {
+  try {
+    const notifications = await AdminNotification.find().sort({ createdAt: -1 }).limit(20);
+    // If empty, let's create a welcome notification for demonstration since the user wants to see it working
+    if (notifications.length === 0) {
+      const welcome = await AdminNotification.create({
+        title: 'Welcome to Admin Portal',
+        message: 'Your system is running smoothly. Notifications will appear here.',
+        type: 'success'
+      });
+      return res.json([welcome]);
+    }
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const markNotificationsRead = async (req, res) => {
+  try {
+    await AdminNotification.updateMany({ isRead: false }, { isRead: true });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getDashboardStats, getAllChats, exportChat, getAllUsers, getNotifications, markNotificationsRead };

@@ -1,14 +1,42 @@
 import { useUser } from '@clerk/clerk-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 export default function AdminLayout() {
   const { user } = useUser();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const fetchNotifications = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+      const { data } = await axios.get(`${baseUrl}/api/admin/notifications`);
+      if (Array.isArray(data)) setNotifications(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const markRead = async () => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+      await axios.post(`${baseUrl}/api/admin/notifications/read`);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     if (user && user.primaryEmailAddress?.emailAddress !== 'kashishsalvi06@gmail.com') {
       navigate('/chat', { replace: true });
+    } else if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 5000);
+      return () => clearInterval(interval);
     }
   }, [user, navigate]);
 
@@ -118,9 +146,38 @@ export default function AdminLayout() {
               className="px-3 md:px-4 py-2 rounded-full font-label-caps text-label-caps bg-red-600 text-white hover:bg-red-500 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-red-500/50 whitespace-nowrap">
               Exit to Chat
             </button>
-            <button className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors shrink-0">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications && unreadCount > 0) markRead();
+                }}
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors shrink-0 relative">
+                <span className="material-symbols-outlined">notifications</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-surface"></span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-lg z-50 p-2 flex flex-col gap-2">
+                  <h3 className="font-title-sm p-2 text-on-surface border-b border-outline-variant/20">Notifications</h3>
+                  {notifications.length === 0 ? (
+                    <p className="text-center p-4 text-on-surface-variant font-body-sm">No notifications yet.</p>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n._id} className={`p-3 rounded-lg flex flex-col gap-1 ${n.isRead ? 'opacity-70' : 'bg-surface-container-low'}`}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${n.type === 'error' ? 'bg-red-500' : n.type === 'success' ? 'bg-green-500' : n.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}`}></span>
+                          <span className="font-title-sm text-sm text-on-surface">{n.title}</span>
+                        </div>
+                        <p className="font-body-sm text-xs text-on-surface-variant pl-4">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
