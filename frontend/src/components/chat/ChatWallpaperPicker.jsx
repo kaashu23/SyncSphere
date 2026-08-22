@@ -62,17 +62,17 @@ export default function ChatWallpaperPicker({ chatId, currentUser, onUpdate, onC
         <div className="flex flex-col gap-4">
           <div className="relative w-full h-12 bg-primary text-on-primary rounded-lg font-title-sm flex items-center justify-center hover:bg-primary-container transition-colors cursor-pointer shadow-sm overflow-hidden">
             {loading ? 'Uploading...' : 'Upload New Wallpaper'}
-            {!loading && (
+            <div style={{ display: loading ? 'none' : 'block' }}>
               <IKUpload
                 fileName={`wallpaper_${chatId}.jpg`}
                 folder="/syncsphere/wallpapers"
                 onSuccess={handleSuccess}
                 onError={handleError}
                 onUploadStart={() => setLoading(true)}
-                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                style={{ position: 'absolute', top: 0, left: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%', zIndex: 10 }}
                 accept="image/*"
               />
-            )}
+            </div>
           </div>
           
           <button 

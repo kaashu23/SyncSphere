@@ -661,7 +661,11 @@ export default function ChatHome() {
                       </div>
                       <p className="font-body-sm text-on-surface-variant truncate pr-2">
                         {chat.latestMessage ? (
-                          chat.latestMessage.content.startsWith('http') && chat.latestMessage.content.includes('ik.imagekit.io')
+                          chat.latestMessage.type === 'gif' || chat.latestMessage.type === 'sticker' ? 'Sticker'
+                          : chat.latestMessage.type === 'image' ? '📷 Photo'
+                          : chat.latestMessage.type === 'video' ? '🎥 Video'
+                          : chat.latestMessage.type === 'audio' ? '🎵 Audio'
+                          : chat.latestMessage.content.startsWith('http') && chat.latestMessage.content.includes('ik.imagekit.io')
                             ? (chat.latestMessage.content.endsWith('.webm') || chat.latestMessage.content.endsWith('.mp3') || chat.latestMessage.content.endsWith('.wav') || chat.latestMessage.content.endsWith('.ogg') ? '🎵 Audio message' : '📎 File attached')
                             : chat.latestMessage.content
                         ) : 'Start a conversation'}

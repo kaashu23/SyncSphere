@@ -49,7 +49,7 @@ exports.sendMessage = async (req, res) => {
       newMessage.expiresAt = new Date(Date.now() + chat.disappearingTimer * 3600 * 1000);
     }
 
-    if (type !== 'image' && type !== 'video' && type !== 'audio') {
+    if (type !== 'image' && type !== 'video' && type !== 'audio' && type !== 'gif' && type !== 'sticker') {
       const urlRegex = /(https?:\/\/[^\s]+)/g;
       const urls = content.match(urlRegex);
       if (urls && urls.length > 0) {
